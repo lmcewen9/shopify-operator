@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,17 +26,14 @@ import (
 
 // ShopifyScraperSpec defines the desired state of ShopifyScraper.
 type ShopifyScraperSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of ShopifyScraper. Edit shopifyscraper_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Name      string `json:"name"`
+	Url       string `json:"url"`
+	WatchTime *int32 `json:"watchtime"`
 }
 
 // ShopifyScraperStatus defines the observed state of ShopifyScraper.
 type ShopifyScraperStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Active []corev1.ObjectReference `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true
