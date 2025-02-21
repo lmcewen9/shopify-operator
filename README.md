@@ -1,8 +1,8 @@
 # shopify-crd
-// TODO(user): Add simple overview of use/purpose
+This Custom Resource Definition is designed to scrape the Shopify endpoint \<url\>/products.json and report back to the cluster.
 
 ## Description
-// TODO(user): An in-depth paragraph about your project and overview of use
+Scrapes Shopify API endpoints
 
 ## Getting Started
 
