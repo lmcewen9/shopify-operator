@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -29,7 +30,7 @@ type ShopifyScraperSpec struct {
 
 // ShopifyScraperStatus defines the observed state of ShopifyScraper.
 type ShopifyScraperStatus struct {
-	//Active []corev1.ObjectReference `json:"active,omitempty"`
+	Active []corev1.ObjectReference `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true
