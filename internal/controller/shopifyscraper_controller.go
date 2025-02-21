@@ -19,8 +19,6 @@ package controller
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -28,6 +26,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
+	model "github.com/lmcewen9/shopify-crd/scraper"
 )
 
 // ShopifyScraperReconciler reconciles a ShopifyScraper object
@@ -59,15 +58,21 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	resp, err := http.Get(scraper.Spec.Url)
-	if err != nil {
-		fmt.Println("Error calling API:", err)
-		return ctrl.Result{}, err
-	}
-	defer resp.Body.Close()
+	page := 1
+	for {
+		s, err := model.FetchShopify(&model.Configuration{
+			URL: scraper.Spec.Url,
+		}, page)
 
-	body, _ := ioutil.ReadAll(resp.Body)
-	fmt.Println("API Response:", string(body))
+		if s == "" {
+			break
+		}
+		if err != nil {
+			logger.Error(err, "Error")
+		}
+		fmt.Print(s)
+		page++
+	}
 
 	return ctrl.Result{}, nil
 }
