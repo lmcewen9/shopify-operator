@@ -19,7 +19,11 @@ func FetchShopify(config *Configuration, page int) (string, error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer res.Body.Close()
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}()
 
 	var pResp ProductResponse
 
