@@ -19,10 +19,17 @@ package controller
 import (
 	"context"
 
+	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
+	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
 )
@@ -56,10 +63,50 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
+func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcile.Request {
+	if pod.GetNamespace() != "default" {
+		return []reconcile.Request{}
+	}
+	namespaceName := types.NamespacedName{
+		Namespace: pod.GetNamespace(),
+		Name:      pod.GetName(),
+	}
+
+	var podObject corev1.Pod
+	err := r.Get(context.Background(), namespaceName, &podObject)
+
+	if err != nil {
+		return []reconcile.Request{}
+	}
+
+	if len(podObject.Annotations) == 0 {
+		log.Log.V(1).Info("No annotations set, so this pod is becoming a tracked one now", "pod", podObject.Name)
+	} else if podObject.GetAnnotations()["exampleAnnotation"] == "lukemcewen.com" {
+		log.Log.V(1).Info("Found a managed pod, lets report it", "pod", podObject.Name)
+	} else {
+		return []reconcile.Request{}
+	}
+
+	podObject.SetAnnotations(map[string]string{
+		"exampleAnnotation": "lukemcewen.com",
+	})
+
+	if err := r.Update(context.TODO(), &podObject); err != nil {
+		log.Log.V(1).Info("error trying to update pod", "err", err)
+	}
+
+	return []reconcile.Request{}
+}
+
 // SetupWithManager sets up the controller with the Manager.
 func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lukemcewencomv1.ShopifyScraper{}).
+		Watches(
+			&source.Kind{Type: &corev1.Pod{}},
+			handler.EnqueueRequestsFromMapFunc(r.HandlePodEvents),
+			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
+		).
 		Named("shopifyscraper").
 		Complete(r)
 }
