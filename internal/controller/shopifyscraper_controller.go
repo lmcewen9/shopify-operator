@@ -18,14 +18,14 @@ package controller
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"net/http"
 
-	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
 )
@@ -54,12 +54,25 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	logger.Info("controller triggered")
 
-	// TODO(user): your logic here
+	var scraper lukemcewencomv1.ShopifyScraper
+	if err := r.Get(ctx, req.NamespacedName, &scraper); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	resp, err := http.Get(scraper.Spec.Url)
+	if err != nil {
+		fmt.Println("Error calling API:", err)
+		return ctrl.Result{}, err
+	}
+	defer resp.Body.Close()
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println("API Response:", string(body))
 
 	return ctrl.Result{}, nil
 }
 
-func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcile.Request {
+/*func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcile.Request {
 	if pod.GetNamespace() != "default" {
 		return []reconcile.Request{}
 	}
@@ -92,7 +105,7 @@ func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcil
 	}
 
 	return []reconcile.Request{}
-}
+}*/
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
