@@ -18,7 +18,9 @@ package controller
 
 import (
 	"context"
+	"fmt"
 
+	discord "github.com/bwmarrin/discordgo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
@@ -63,6 +65,27 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	return ctrl.Result{}, nil
 }
 
+func report(reporter lukemcewencomv1.ShopifyScraper, pod corev1.Pod) {
+	// report to slack
+	log.Log.V(1).Info("Reporting to reporter", "name", reporter.Spec.Name, "endpoint", reporter.Spec.Report.Key)
+	discordChannel := reporter.Spec.Report.Channel
+	app := discord.New(reporter.Spec.Report.Key, discord.OptionDebug(true))
+
+	message := fmt.Sprintf("New pod created: %s", pod.Name)
+	msgText := discord.NewTextBlockObject("mrkdwn", message, false, false)
+	msgSection := discord.NewSectionBlock(msgText, nil, nil)
+	msg := discord.MsgOptionBlocks(
+		msgSection,
+	)
+	fmt.Print(msg)
+	log.Log.V(1).Info("Reporting", "message", "", "channel", discordChannel)
+	_, _, _, err := app.SendMessage(discordChannel, msg)
+
+	if err != nil {
+		log.Log.V(1).Info(err.Error())
+	}
+}
+
 func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcile.Request {
 	if pod.GetNamespace() != "default" {
 		return []reconcile.Request{}
@@ -104,7 +127,7 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&lukemcewencomv1.ShopifyScraper{}).
 		Watches(
 			&source.Kind{Type: &corev1.Pod{}},
-			handler.EnqueueRequestsFromMapFunc(r.HandlePodEvents),
+			handler.EnqueueRequestsFromMapFunc(handler.MapFunc(r.HandlePodEvents)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
 		).
 		Named("shopifyscraper").

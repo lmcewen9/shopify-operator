@@ -21,14 +21,18 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
-// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
+type Reporter struct {
+	Kind	string	`json:"kind"`
+	Key		string	`json:"key"`
+	Channel	string	`json:"channel"`
+}
 
 // ShopifyScraperSpec defines the desired state of ShopifyScraper.
 type ShopifyScraperSpec struct {
 	Name      string `json:"name"`
 	Url       string `json:"url"`
 	WatchTime *int32 `json:"watchtime"`
+	Report    Reporter `json:"report"`
 }
 
 // ShopifyScraperStatus defines the observed state of ShopifyScraper.
