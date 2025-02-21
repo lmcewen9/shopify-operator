@@ -17,27 +17,19 @@ limitations under the License.
 package v1
 
 import (
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
-
-type Reporter struct {
-	Kind	string	`json:"kind"`
-	Key		string	`json:"key"`
-	Channel	string	`json:"channel"`
-}
 
 // ShopifyScraperSpec defines the desired state of ShopifyScraper.
 type ShopifyScraperSpec struct {
 	Name      string `json:"name"`
 	Url       string `json:"url"`
 	WatchTime *int32 `json:"watchtime"`
-	Report    Reporter `json:"report"`
 }
 
 // ShopifyScraperStatus defines the observed state of ShopifyScraper.
 type ShopifyScraperStatus struct {
-	Active []corev1.ObjectReference `json:"active,omitempty"`
+	//Active []corev1.ObjectReference `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true

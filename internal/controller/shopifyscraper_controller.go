@@ -18,20 +18,14 @@ package controller
 
 import (
 	"context"
-	"fmt"
 
-	discord "github.com/bwmarrin/discordgo"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	ctrl "sigs.k8s.io/controller-runtime"
-	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-	"sigs.k8s.io/controller-runtime/pkg/source"
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
 )
@@ -63,27 +57,6 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// TODO(user): your logic here
 
 	return ctrl.Result{}, nil
-}
-
-func report(reporter lukemcewencomv1.ShopifyScraper, pod corev1.Pod) {
-	// report to slack
-	log.Log.V(1).Info("Reporting to reporter", "name", reporter.Spec.Name, "endpoint", reporter.Spec.Report.Key)
-	discordChannel := reporter.Spec.Report.Channel
-	app := discord.New(reporter.Spec.Report.Key, discord.OptionDebug(true))
-
-	message := fmt.Sprintf("New pod created: %s", pod.Name)
-	msgText := discord.NewTextBlockObject("mrkdwn", message, false, false)
-	msgSection := discord.NewSectionBlock(msgText, nil, nil)
-	msg := discord.MsgOptionBlocks(
-		msgSection,
-	)
-	fmt.Print(msg)
-	log.Log.V(1).Info("Reporting", "message", "", "channel", discordChannel)
-	_, _, _, err := app.SendMessage(discordChannel, msg)
-
-	if err != nil {
-		log.Log.V(1).Info(err.Error())
-	}
 }
 
 func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcile.Request {
@@ -125,11 +98,11 @@ func (r *ShopifyScraperReconciler) HandlePodEvents(pod client.Object) []reconcil
 func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lukemcewencomv1.ShopifyScraper{}).
-		Watches(
+		/*Watches(
 			&source.Kind{Type: &corev1.Pod{}},
 			handler.EnqueueRequestsFromMapFunc(handler.MapFunc(r.HandlePodEvents)),
 			builder.WithPredicates(predicate.ResourceVersionChangedPredicate{}),
-		).
+		).*/
 		Named("shopifyscraper").
 		Complete(r)
 }
