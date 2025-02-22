@@ -39,7 +39,7 @@ spec:
           spec:
             description: DiscordBotSpec defines the desired state of DiscordBot.
             properties:
-              key:
+              token:
                 type: string
             type: object
           status:
