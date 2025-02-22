@@ -33,6 +33,8 @@ import (
 var _ = Describe("ShopifyScraper Controller", func() {
 	Context("When reconciling a resource", func() {
 		const resourceName = "test-resource"
+		const url = "store.taylorswift.com"
+		watchtime := int32(30)
 
 		ctx := context.Background()
 
@@ -51,7 +53,11 @@ var _ = Describe("ShopifyScraper Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: lukemcewencomv1.ShopifyScraperSpec{
+						Name:      resourceName,
+						Url:       url,
+						WatchTime: &watchtime,
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

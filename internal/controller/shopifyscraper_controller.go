@@ -68,7 +68,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			break
 		}
 		if err != nil {
-			logger.Error(err, "Error")
+			logger.Error(err, err.Error())
 		}
 		fmt.Print(s)
 		page++
