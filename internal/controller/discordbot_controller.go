@@ -61,7 +61,7 @@ func (r *DiscordBotReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if bot.Spec.Token == "" {
-		logger.Error(errors.New("deed discord token"), "Bot needs Discord Token")
+		logger.Error(errors.New("need discord token"), "Bot needs Discord Token")
 	}
 
 	if !bot.Status.Running {
@@ -85,13 +85,14 @@ func (r *DiscordBotReconciler) SetupWithManager(mgr ctrl.Manager) error {
 
 func startDiscordBot(token string, ctx context.Context) {
 	logger := log.FromContext(ctx)
-	dg, err := discordgo.New("ControllerBot" + token)
+	dg, err := discordgo.New("Bot " + token)
 	if err != nil {
 		logger.Error(err, "Error creating Discord session")
 		return
 	}
 
 	dg.AddHandler(messageHandler)
+
 	if err := dg.Open(); err != nil {
 		logger.Error(err, "Error opening Discord connection")
 		return
