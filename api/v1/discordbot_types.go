@@ -25,17 +25,12 @@ import (
 
 // DiscordBotSpec defines the desired state of DiscordBot.
 type DiscordBotSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
-
-	// Foo is an example field of DiscordBot. Edit discordbot_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+	Token string `json:"key,omitempty"` //omitempty for tests
 }
 
 // DiscordBotStatus defines the observed state of DiscordBot.
 type DiscordBotStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Running bool `json:"running"`
 }
 
 // +kubebuilder:object:root=true

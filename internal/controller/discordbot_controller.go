@@ -18,7 +18,13 @@ package controller
 
 import (
 	"context"
+	"errors"
+	"os"
+	"os/signal"
+	"strings"
+	"syscall"
 
+	"github.com/bwmarrin/discordgo"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -47,9 +53,24 @@ type DiscordBotReconciler struct {
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.20.0/pkg/reconcile
 func (r *DiscordBotReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
-	_ = log.FromContext(ctx)
+	logger := log.FromContext(ctx)
 
-	// TODO(user): your logic here
+	var bot lukemcewencomv1.DiscordBot
+	if err := r.Get(ctx, req.NamespacedName, &bot); err != nil {
+		return ctrl.Result{}, client.IgnoreNotFound(err)
+	}
+
+	if bot.Spec.Token == "" {
+		logger.Error(errors.New("deed discord token"), "Bot needs Discord Token")
+	}
+
+	if !bot.Status.Running {
+		go startDiscordBot(bot.Spec.Token, ctx)
+		bot.Status.Running = true
+		if err := r.Status().Update(ctx, &bot); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
 
 	return ctrl.Result{}, nil
 }
@@ -60,4 +81,36 @@ func (r *DiscordBotReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&lukemcewencomv1.DiscordBot{}).
 		Named("discordbot").
 		Complete(r)
+}
+
+func startDiscordBot(token string, ctx context.Context) {
+	logger := log.FromContext(ctx)
+	dg, err := discordgo.New("ControllerBot" + token)
+	if err != nil {
+		logger.Error(err, "Error creating Discord session")
+		return
+	}
+
+	dg.AddHandler(messageHandler)
+	if err := dg.Open(); err != nil {
+		logger.Error(err, "Error opening Discord connection")
+		return
+	}
+
+	logger.Info("Bot is running. Pless CTRL+C to stop.")
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	<-stop
+
+	dg.Close()
+}
+
+func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	if m.Author.Bot {
+		return
+	}
+
+	if strings.HasPrefix(m.Content, "!ping") {
+		s.ChannelMessageSend(m.ChannelID, "Pong!")
+	}
 }
