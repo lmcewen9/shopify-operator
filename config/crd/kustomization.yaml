@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/lukemcewen.com_shopifyscrapers.yaml
+- bases/lukemcewen.com_discordbots.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

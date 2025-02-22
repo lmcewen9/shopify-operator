@@ -7,6 +7,7 @@ rules:
 - apiGroups:
   - lukemcewen.com
   resources:
+  - discordbots
   - shopifyscrapers
   verbs:
   - create
@@ -19,12 +20,14 @@ rules:
 - apiGroups:
   - lukemcewen.com
   resources:
+  - discordbots/finalizers
   - shopifyscrapers/finalizers
   verbs:
   - update
 - apiGroups:
   - lukemcewen.com
   resources:
+  - discordbots/status
   - shopifyscrapers/status
   verbs:
   - get
