@@ -58,6 +58,24 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
+	data := Scrape(ctx, scraper)
+	fmt.Println(data)
+
+	return ctrl.Result{}, nil
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	return ctrl.NewControllerManagedBy(mgr).
+		For(&lukemcewencomv1.ShopifyScraper{}).
+		Named("shopifyscraper").
+		Complete(r)
+}
+
+func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) string {
+	logger := log.FromContext(ctx)
+
+	data := ""
 	page := 1
 	for {
 		s, err := model.FetchShopify(&model.Configuration{
@@ -70,17 +88,9 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		if err != nil {
 			logger.Error(err, err.Error())
 		}
-		fmt.Print(s)
+		data += s
 		page++
 	}
 
-	return ctrl.Result{}, nil
-}
-
-// SetupWithManager sets up the controller with the Manager.
-func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
-	return ctrl.NewControllerManagedBy(mgr).
-		For(&lukemcewencomv1.ShopifyScraper{}).
-		Named("shopifyscraper").
-		Complete(r)
+	return data
 }
