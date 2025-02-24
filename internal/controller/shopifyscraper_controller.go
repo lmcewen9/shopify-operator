@@ -18,8 +18,11 @@ package controller
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
+	"os"
 
+	"github.com/jackc/pgx/v5"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -58,8 +61,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	data := Scrape(ctx, scraper)
-	fmt.Println(data)
+	checkDatabase(ctx, scraper)
 
 	return ctrl.Result{}, nil
 }
@@ -93,4 +95,39 @@ func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) string 
 	}
 
 	return data
+}
+
+func checkDatabase(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) error {
+	logger := log.FromContext(ctx)
+
+	connection := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		os.Getenv("POSTGRES_USER"),
+		os.Getenv("DB_PASSWORD"),
+		getServiceName(),
+		os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"),
+	)
+
+	db, err := pgx.Connect(ctx, connection)
+	if err != nil {
+		logger.Error(err, "failed to connect to database")
+	}
+	defer db.Close(ctx)
+
+	if _, err = db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS records (id SERIAL PRIMARY KEY, data TEXT)`); err != nil {
+		logger.Error(err, "failed tp create table")
+	}
+
+	var existingData string
+	if err = db.QueryRow(context.Background(), "SELECT data FROM records ORDER BY id DESC LIMIT 1").Scan(&existingData); err != nil && err != sql.ErrNoRows {
+		logger.Error(err, "falied to query database")
+	}
+
+	newData := Scrape(ctx, scraper)
+	if newData != existingData {
+		logger.Error(err, "new data and old data are the same")
+	}
+
+	return err
 }

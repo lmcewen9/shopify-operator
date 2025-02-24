@@ -17,6 +17,7 @@ limitations under the License.
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -25,17 +26,23 @@ import (
 
 // ShopifyDBSpec defines the desired state of ShopifyDB.
 type ShopifyDBSpec struct {
-	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	StorageSize string `json:"storageSize"`
+	Image       string `json:"image,omitempty"`
+	Replicas    int32  `json:"replicas,omitempty"`
+}
 
-	// Foo is an example field of ShopifyDB. Edit shopifydb_types.go to remove/update
-	Foo string `json:"foo,omitempty"`
+func (db *ShopifyDB) SetDefaults() {
+	if db.Spec.Image == "" {
+		db.Spec.Image = "postgres:latest"
+	}
+	if db.Spec.Replicas == 0 {
+		db.Spec.Replicas = 1
+	}
 }
 
 // ShopifyDBStatus defines the observed state of ShopifyDB.
 type ShopifyDBStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+	Active []corev1.ObjectReference `json:"active,omitempty"`
 }
 
 // +kubebuilder:object:root=true
