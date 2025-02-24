@@ -29,6 +29,7 @@ type ShopifyDBSpec struct {
 	StorageSize string `json:"storageSize"`
 	Image       string `json:"image,omitempty"`
 	Replicas    int32  `json:"replicas,omitempty"`
+	MountPath   string `json:"mountPath,omitempty"`
 }
 
 func (db *ShopifyDB) SetDefaults() {
@@ -37,6 +38,10 @@ func (db *ShopifyDB) SetDefaults() {
 	}
 	if db.Spec.Replicas == 0 {
 		db.Spec.Replicas = 1
+	}
+
+	if db.Spec.MountPath == "" {
+		db.Spec.MountPath = "/mnt/data"
 	}
 }
 

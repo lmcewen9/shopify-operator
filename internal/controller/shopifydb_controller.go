@@ -18,7 +18,6 @@ package controller
 
 import (
 	"context"
-	"os"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -57,9 +56,9 @@ type ShopifyDBReconciler struct {
 func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	dbUser := os.Getenv("POSTGRES_USER")
-	dbPass := os.Getenv("POSTGRES_PASSWORD")
-	dbName := os.Getenv("POSTGRES_DB")
+	dbUser := "postgres"
+	dbPass := "password"
+	dbName := "shopifydb-test-svc"
 
 	db := &lukemcewencomv1.ShopifyDB{}
 	if err := r.Get(ctx, req.NamespacedName, db); err != nil {
@@ -68,9 +67,26 @@ func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	}
 
 	db.SetDefaults()
-	ServiceName = req.Name
+	ServiceName = req.Name + "-svc"
+	/*hostname, err := os.Hostname()
+	if err != nil {
+		logger.Error(err, "failed to get hostname")
+	}*/
 
-	pv := &corev1.PersistentVolume{
+	/*storage := &storagev1.StorageClass{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      req.Name + "-storage-class",
+			Namespace: req.Namespace,
+		},
+		Provisioner:       "rancher.io/local-path",
+		VolumeBindingMode: &[]storagev1.VolumeBindingMode{storagev1.VolumeBindingImmediate}[0],
+		ReclaimPolicy:     &[]corev1.PersistentVolumeReclaimPolicy{corev1.PersistentVolumeReclaimDelete}[0],
+	}
+	if err := r.Create(ctx, storage); err != nil {
+		logger.Error(err, "StorageClass already exists or error")
+	}*/
+
+	/*pv := &corev1.PersistentVolume{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      req.Name + "-pv",
 			Namespace: req.Namespace,
@@ -80,19 +96,34 @@ func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 				corev1.ResourceName(corev1.ResourceStorage): resource.MustParse(db.Spec.StorageSize),
 			},
 			VolumeMode:                    ptr(corev1.PersistentVolumeBlock),
-			AccessModes:                   []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			AccessModes:                   []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			PersistentVolumeReclaimPolicy: corev1.PersistentVolumeReclaimDelete,
-			StorageClassName:              "manual",
+			StorageClassName:              "local-path",
 			PersistentVolumeSource: corev1.PersistentVolumeSource{
-				HostPath: &corev1.HostPathVolumeSource{
-					Path: "/mnt/data/" + req.Name,
+				Local: &corev1.LocalVolumeSource{
+					Path: db.Spec.MountPath,
+				},
+			},
+			NodeAffinity: &corev1.VolumeNodeAffinity{
+				Required: &corev1.NodeSelector{
+					NodeSelectorTerms: []corev1.NodeSelectorTerm{
+						{
+							MatchExpressions: []corev1.NodeSelectorRequirement{
+								{
+									Key:      "kubernetes.io/hostname",
+									Operator: corev1.NodeSelectorOpIn,
+									Values:   []string{hostname},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 	}
 	if err := r.Create(ctx, pv); err != nil {
 		logger.Error(err, "PV already exists or error")
-	}
+	}*/
 
 	pvc := &corev1.PersistentVolumeClaim{
 		ObjectMeta: metav1.ObjectMeta{
@@ -100,8 +131,8 @@ func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 			Namespace: req.Namespace,
 		},
 		Spec: corev1.PersistentVolumeClaimSpec{
-			StorageClassName: &[]string{"manual"}[0],
-			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteMany},
+			StorageClassName: &[]string{"local-path"}[0],
+			AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
 			Resources: corev1.VolumeResourceRequirements{
 				Requests: corev1.ResourceList{
 					corev1.ResourceName(corev1.ResourceStorage): resource.MustParse(db.Spec.StorageSize),
@@ -134,9 +165,9 @@ func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 							Image: db.Spec.Image,
 							Ports: []corev1.ContainerPort{{ContainerPort: 5432}},
 							Env: []corev1.EnvVar{
-								{Name: "DB_USER", Value: dbUser},
-								{Name: "DB_PASSWORD", Value: dbPass},
-								{Name: "DB_NAME", Value: dbName},
+								{Name: "POSTGRES_USER", Value: dbUser},
+								{Name: "POSTGRES_PASSWORD", Value: dbPass},
+								{Name: "POSTGRES_DB", Value: dbName},
 							},
 							VolumeMounts: []corev1.VolumeMount{
 								{
@@ -151,7 +182,7 @@ func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 							Name: "shopifydb-storage",
 							VolumeSource: corev1.VolumeSource{
 								PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-									ClaimName: req.Name + "pv-claim",
+									ClaimName: req.Name + "-pv-claim",
 								},
 							},
 						},
@@ -187,9 +218,9 @@ func (r *ShopifyDBReconciler) Reconcile(ctx context.Context, req ctrl.Request) (
 	return ctrl.Result{}, nil
 }
 
-func ptr[T any](v T) *T {
+/*func ptr[T any](v T) *T {
 	return &v
-}
+}*/
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *ShopifyDBReconciler) SetupWithManager(mgr ctrl.Manager) error {
@@ -199,6 +230,6 @@ func (r *ShopifyDBReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func getServiceName() string {
+/*func getServiceName() string {
 	return ServiceName
-}
+}*/

@@ -20,11 +20,12 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"reflect"
 	"time"
 
-	"github.com/jackc/pgx/v5"
+	//"github.com/jackc/pgx/v5"
+	"github.com/jmoiron/sqlx"
+	_ "github.com/lib/pq"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -99,8 +100,8 @@ func Scrape(ctx context.Context, scraper *lukemcewencomv1.ShopifyScraper) []stri
 	return data
 }
 
-func CreateTable(ctx context.Context, db *pgx.Conn, scraper *lukemcewencomv1.ShopifyScraper) error {
-	if _, err := db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS {$1} (id INT PRIMARY KEY, data TEXT)`, scraper.Spec.Name); err != nil {
+func CreateTable(ctx context.Context, db *sqlx.DB, scraper *lukemcewencomv1.ShopifyScraper) error {
+	if _, err := db.Exec(`CREATE TABLE IF NOT EXISTS {$1} (id INT PRIMARY KEY, data TEXT)`, scraper.Spec.Name+"-svc"); err != nil {
 		return err
 	}
 	return nil
@@ -109,32 +110,60 @@ func CreateTable(ctx context.Context, db *pgx.Conn, scraper *lukemcewencomv1.Sho
 func checkDatabase(ctx context.Context, scraper *lukemcewencomv1.ShopifyScraper) ([]string, error) {
 	logger := log.FromContext(ctx)
 
-	connection := fmt.Sprintf(
+	/*connection := fmt.Sprintf(
 		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
 		os.Getenv("POSTGRES_USER"),
 		os.Getenv("DB_PASSWORD"),
 		getServiceName(),
 		os.Getenv("DB_PORT"),
 		os.Getenv("DB_NAME"),
-	)
+	)*/
 
-	db, err := pgx.Connect(ctx, connection)
+	/*connection := fmt.Sprintf(
+		"postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		"postgres",
+		"password",
+		getServiceName(),
+		"5432",
+		"shopifydb",
+	)*/
+
+	//db, err := sqlx.Connect("postgres", "user=postgres dbname=shopifydb-test-svc sslmode=disable password=password host=shopifydb-test-svc")
+	db, err := sqlx.Connect("postgres", "user=postgres dbname=shopifydb-test-svc password=password host=shopifydb-test-svc.default.svc.cluster.local")
+
 	if err != nil {
 		logger.Error(err, "failed to connect to database")
 	}
-	defer db.Close(ctx)
+	defer db.Close()
+
+	if err := db.Ping(); err != nil {
+		logger.Error(err, "failed to ping database")
+	} else {
+		logger.Info("Successfully connected to PostgreSQL!")
+	}
 
 	if err = CreateTable(ctx, db, scraper); err != nil {
 		logger.Error(err, "failed to create table")
 	}
 
 	var existingData []string
-	if err = db.QueryRow(context.Background(), "SELECT data FROM {$1} ORDER BY id DESC LIMIT 1", scraper.Spec.Name).Scan(&existingData); err != nil && err != sql.ErrNoRows {
+	rows, err := db.Query(fmt.Sprintf("SELECT data FROM %s ORDER BY id DESC LIMIT 1", (scraper.Spec.Name + "-svc")))
+	if err != nil && err != sql.ErrNoRows {
 		logger.Error(err, "falied to query database")
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		if err := rows.Scan(&existingData); err != nil {
+			logger.Error(err, "Failed to scan row")
+		}
+	} else {
+		logger.Info("no data in the table")
 	}
 
 	newData := Scrape(ctx, scraper)
 	if !reflect.DeepEqual(newData, existingData) {
+		logger.Info("Finding differences in data")
 
 		existingDataMap := make(map[string]bool)
 		var differences []string
@@ -149,18 +178,19 @@ func checkDatabase(ctx context.Context, scraper *lukemcewencomv1.ShopifyScraper)
 			}
 		}
 
-		if _, err = db.Exec(ctx, "DROP TABLE IF EXISTS {$1}", scraper.Spec.Name); err != nil {
+		if _, err = db.Exec("DROP TABLE IF EXISTS {$1}", scraper.Spec.Name+"-svc"); err != nil {
 			logger.Error(err, "failed to drop table")
 		}
 		if err = CreateTable(ctx, db, scraper); err != nil {
 			logger.Error(err, "failed to create table")
 		}
-		if _, err = db.Exec(ctx, "INSERT INTO {$1} (data) VALUES ({$2})", scraper.Spec.Name, newData); err != nil {
+		if _, err = db.Exec("INSERT INTO {$1} (data) VALUES ({$2})", scraper.Spec.Name+"-svc", newData); err != nil {
 
 		}
 
 		return differences, nil
 	}
+	logger.Info("No differences in data")
 
 	return nil, err
 }
