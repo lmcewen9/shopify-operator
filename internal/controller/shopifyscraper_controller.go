@@ -21,6 +21,8 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
+	"reflect"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -58,12 +60,12 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 	var scraper lukemcewencomv1.ShopifyScraper
 	if err := r.Get(ctx, req.NamespacedName, &scraper); err != nil {
-		return ctrl.Result{}, client.IgnoreNotFound(err)
+		return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, client.IgnoreNotFound(err)
 	}
 
-	checkDatabase(ctx, scraper)
+	checkDatabase(ctx, &scraper)
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -74,30 +76,37 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) string {
+func Scrape(ctx context.Context, scraper *lukemcewencomv1.ShopifyScraper) []string {
 	logger := log.FromContext(ctx)
 
-	data := ""
+	var data []string
 	page := 1
 	for {
 		s, err := model.FetchShopify(&model.Configuration{
 			URL: scraper.Spec.Url,
 		}, page)
 
-		if s == "" {
+		if s == nil {
 			break
 		}
 		if err != nil {
 			logger.Error(err, err.Error())
 		}
-		data += s
+		data = append(data, s...)
 		page++
 	}
 
 	return data
 }
 
-func checkDatabase(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) error {
+func CreateTable(ctx context.Context, db *pgx.Conn, scraper *lukemcewencomv1.ShopifyScraper) error {
+	if _, err := db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS {$1} (id INT PRIMARY KEY, data TEXT)`, scraper.Spec.Name); err != nil {
+		return err
+	}
+	return nil
+}
+
+func checkDatabase(ctx context.Context, scraper *lukemcewencomv1.ShopifyScraper) ([]string, error) {
 	logger := log.FromContext(ctx)
 
 	connection := fmt.Sprintf(
@@ -115,19 +124,43 @@ func checkDatabase(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) 
 	}
 	defer db.Close(ctx)
 
-	if _, err = db.Exec(context.Background(), `CREATE TABLE IF NOT EXISTS records (id SERIAL PRIMARY KEY, data TEXT)`); err != nil {
-		logger.Error(err, "failed tp create table")
+	if err = CreateTable(ctx, db, scraper); err != nil {
+		logger.Error(err, "failed to create table")
 	}
 
-	var existingData string
-	if err = db.QueryRow(context.Background(), "SELECT data FROM records ORDER BY id DESC LIMIT 1").Scan(&existingData); err != nil && err != sql.ErrNoRows {
+	var existingData []string
+	if err = db.QueryRow(context.Background(), "SELECT data FROM {$1} ORDER BY id DESC LIMIT 1", scraper.Spec.Name).Scan(&existingData); err != nil && err != sql.ErrNoRows {
 		logger.Error(err, "falied to query database")
 	}
 
 	newData := Scrape(ctx, scraper)
-	if newData != existingData {
-		logger.Error(err, "new data and old data are the same")
+	if !reflect.DeepEqual(newData, existingData) {
+
+		existingDataMap := make(map[string]bool)
+		var differences []string
+
+		for _, item := range existingData {
+			existingDataMap[item] = true
+		}
+
+		for _, item := range newData {
+			if !existingDataMap[item] {
+				differences = append(differences, item)
+			}
+		}
+
+		if _, err = db.Exec(ctx, "DROP TABLE IF EXISTS {$1}", scraper.Spec.Name); err != nil {
+			logger.Error(err, "failed to drop table")
+		}
+		if err = CreateTable(ctx, db, scraper); err != nil {
+			logger.Error(err, "failed to create table")
+		}
+		if _, err = db.Exec(ctx, "INSERT INTO {$1} (data) VALUES ({$2})", scraper.Spec.Name, newData); err != nil {
+
+		}
+
+		return differences, nil
 	}
 
-	return err
+	return nil, err
 }
