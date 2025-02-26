@@ -4,6 +4,7 @@
 resources:
 - bases/lukemcewen.com_shopifyscrapers.yaml
 - bases/lukemcewen.com_discordbots.yaml
+- bases/lukemcewen.com_shopifydbs.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

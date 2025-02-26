@@ -12,7 +12,8 @@ type Configuration struct {
 	URL string
 }
 
-func FetchShopify(config *Configuration, page int) (string, error) {
+func FetchShopify(config *Configuration, page int) ([]string, error) {
+	var ret []string
 	var url string = fmt.Sprintf("https://%s/products.json?page=%s", config.URL, strconv.Itoa(page))
 	res, err := http.Get(url)
 
@@ -32,13 +33,11 @@ func FetchShopify(config *Configuration, page int) (string, error) {
 	}
 
 	if len(pResp.Products) == 0 {
-		return "", nil
+		return ret, nil
 	}
 
-	var ret string
-
 	for i := 0; i < len(pResp.Products); i++ {
-		ret += pResp.Products[i].TextOutput(config)
+		ret = append(ret, pResp.Products[i].TextOutput(config))
 	}
 	return ret, nil
 

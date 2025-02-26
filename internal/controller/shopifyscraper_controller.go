@@ -72,23 +72,23 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) string {
+func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) []string {
 	logger := log.FromContext(ctx)
 
-	data := ""
+	var data []string
 	page := 1
 	for {
 		s, err := model.FetchShopify(&model.Configuration{
 			URL: scraper.Spec.Url,
 		}, page)
 
-		if s == "" {
+		if s == nil {
 			break
 		}
 		if err != nil {
 			logger.Error(err, err.Error())
 		}
-		data += s
+		data = append(data, s...)
 		page++
 	}
 
