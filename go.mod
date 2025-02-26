@@ -6,8 +6,6 @@ godebug default=go1.23
 
 require (
 	github.com/bwmarrin/discordgo v0.28.1
-	github.com/jmoiron/sqlx v1.4.0
-	github.com/lib/pq v1.10.9
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
 	k8s.io/api v0.32.2
