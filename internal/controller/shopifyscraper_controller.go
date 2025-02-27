@@ -17,10 +17,24 @@ limitations under the License.
 package controller
 
 import (
+	"bytes"
 	"context"
+	"crypto/x509"
+	"encoding/base64"
 	"fmt"
+	"net/http"
+	"os"
+	"strings"
+	"time"
+
+	_ "github.com/joho/godotenv/autoload"
+	corev1 "k8s.io/api/core/v1"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/client-go/kubernetes"
+	"k8s.io/client-go/kubernetes/scheme"
+	"k8s.io/client-go/rest"
+	"k8s.io/client-go/tools/remotecommand"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
@@ -28,6 +42,8 @@ import (
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
 	model "github.com/lmcewen9/shopify-crd/internal/scraper"
 )
+
+var config *rest.Config
 
 // ShopifyScraperReconciler reconciles a ShopifyScraper object
 type ShopifyScraperReconciler struct {
@@ -51,17 +67,72 @@ type ShopifyScraperReconciler struct {
 func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	logger.Info("controller triggered")
+	//Debugging
+	//logger.Info("controller triggered")
+
+	if _, inCluster := os.LookupEnv("KUBERNETES_SERVICE_HOST"); inCluster {
+		config, _ = rest.InClusterConfig()
+	}
+	if config == nil {
+		server := os.Getenv("MASTERURL")
+		certificateAuthorityData := os.Getenv("CADATA")
+		clientCertificateData := os.Getenv("CERTDATA")
+		clientCertificateKeyData := os.Getenv("CLIENTDATA")
+
+		// Decode base64 certificates
+		caCertBytes, err := base64.StdEncoding.DecodeString(certificateAuthorityData)
+		if err != nil {
+			logger.Error(err, "Failed to decode CA certificate")
+		}
+
+		clientCertBytes, err := base64.StdEncoding.DecodeString(clientCertificateData)
+		if err != nil {
+			logger.Error(err, "Failed to decode client certificate")
+		}
+
+		clientKeyBytes, err := base64.StdEncoding.DecodeString(clientCertificateKeyData)
+		if err != nil {
+			logger.Error(err, "Failed to decode client key")
+		}
+
+		// Load CA certificate
+		caCertPool := x509.NewCertPool()
+		if !caCertPool.AppendCertsFromPEM(caCertBytes) {
+			logger.Error(err, "Failed to append CA certificate")
+		}
+
+		// Create Kubernetes config
+		config = &rest.Config{
+			Host: server,
+			TLSClientConfig: rest.TLSClientConfig{
+				CAData:   caCertBytes,
+				CertData: clientCertBytes,
+				KeyData:  clientKeyBytes,
+			},
+		}
+	}
+
+	clientset, err := kubernetes.NewForConfig(config)
+	if err != nil {
+		logger.Error(err, "error creating kubernetes clientset")
+	}
 
 	var scraper lukemcewencomv1.ShopifyScraper
 	if err := r.Get(ctx, req.NamespacedName, &scraper); err != nil {
 		return ctrl.Result{}, client.IgnoreNotFound(err)
 	}
 
-	data := Scrape(ctx, scraper)
-	fmt.Println(data)
+	data, err := Scrape(&scraper)
+	if err != nil {
+		logger.Error(err, "did not return data")
+	}
+	command := fmt.Sprintf("echo %s > /shopify/%s", base64.StdEncoding.EncodeToString([]byte(strings.Join(data, " "))), req.Name)
+	fmt.Println(command)
+	if err = execInPod(clientset, config, "default", "shopify-pod", "shopify-pod", command); err != nil {
+		logger.Error(err, "Could not execute command")
+	}
 
-	return ctrl.Result{}, nil
+	return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, nil
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -72,10 +143,9 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) []string {
-	logger := log.FromContext(ctx)
-
+func Scrape(scraper *lukemcewencomv1.ShopifyScraper) ([]string, error) {
 	var data []string
+	var err error
 	page := 1
 	for {
 		s, err := model.FetchShopify(&model.Configuration{
@@ -86,11 +156,42 @@ func Scrape(ctx context.Context, scraper lukemcewencomv1.ShopifyScraper) []strin
 			break
 		}
 		if err != nil {
-			logger.Error(err, err.Error())
+			return data, err
 		}
 		data = append(data, s...)
 		page++
 	}
 
-	return data
+	return data, err
+}
+
+func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, podName, containerName, command string) error {
+	req := clientset.CoreV1().RESTClient().Post().
+		Resource("pods").
+		Name(podName).
+		Namespace(namespace).
+		SubResource("exec").
+		VersionedParams(&corev1.PodExecOptions{
+			Container: containerName,
+			Command:   []string{"sh", "-c", command},
+			Stdin:     false,
+			Stdout:    true,
+			Stderr:    true,
+			TTY:       false,
+		}, scheme.ParameterCodec)
+
+	exec, err := remotecommand.NewSPDYExecutor(config, http.MethodPost, req.URL())
+	if err != nil {
+		return err
+	}
+
+	var stdout, stderr bytes.Buffer
+	err = exec.StreamWithContext(context.TODO(), remotecommand.StreamOptions{
+		Stdout: &stdout,
+		Stderr: &stderr,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

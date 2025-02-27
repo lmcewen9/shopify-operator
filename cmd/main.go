@@ -17,6 +17,7 @@ limitations under the License.
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -24,11 +25,13 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	_ "k8s.io/client-go/plugin/pkg/client/auth"
-
+	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/certwatcher"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -216,7 +219,76 @@ func main() {
 		setupLog.Error(err, "unable to create controller", "controller", "DiscordBot")
 		os.Exit(1)
 	}
-	// +kubebuilder:scaffold:builder
+
+	go func() {
+		// Wait a few seconds to ensure the manager is running
+		<-mgr.Elected()
+
+		// Define the pvc spec
+		pvc := &corev1.PersistentVolumeClaim{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "shopify-pvc",
+				Namespace: "default",
+			},
+			Spec: corev1.PersistentVolumeClaimSpec{
+				StorageClassName: &[]string{"local-path"}[0],
+				AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
+				Resources: corev1.VolumeResourceRequirements{
+					Requests: corev1.ResourceList{
+						corev1.ResourceName(corev1.ResourceStorage): resource.MustParse("500Mi"),
+					},
+				},
+			},
+		}
+
+		err := mgr.GetClient().Create(context.TODO(), pvc)
+		if err != nil {
+			setupLog.Error(err, "failed to create pvc")
+		}
+
+		// Define the pod spec
+		pod := &corev1.Pod{
+			ObjectMeta: v1.ObjectMeta{
+				Name:      "shopify-pod",
+				Namespace: "default",
+			},
+			Spec: corev1.PodSpec{
+				Containers: []corev1.Container{
+					{
+						Name:            "shopify-pod",
+						Image:           "alpine:latest",
+						ImagePullPolicy: corev1.PullIfNotPresent,
+						Command:         []string{"sleep", "infinity"},
+						VolumeMounts: []corev1.VolumeMount{
+							{
+								Name:      "shopify-storage",
+								MountPath: "/shopify",
+							},
+						},
+					},
+				},
+
+				Volumes: []corev1.Volume{
+					{
+						Name: "shopify-storage",
+						VolumeSource: corev1.VolumeSource{
+							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
+								ClaimName: "shopify-pvc",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		// Create the pod
+		err = mgr.GetClient().Create(context.TODO(), pod)
+		if err != nil {
+			setupLog.Error(err, "failed to create pod")
+		}
+
+		setupLog.Info("Pod created successfully!")
+	}()
 
 	if metricsCertWatcher != nil {
 		setupLog.Info("Adding metrics certificate watcher to manager")

@@ -8,7 +8,6 @@ rules:
   - lukemcewen.com
   resources:
   - discordbots
-  - shopifydbs
   - shopifyscrapers
   verbs:
   - create
@@ -22,7 +21,6 @@ rules:
   - lukemcewen.com
   resources:
   - discordbots/finalizers
-  - shopifydbs/finalizers
   - shopifyscrapers/finalizers
   verbs:
   - update
@@ -30,7 +28,6 @@ rules:
   - lukemcewen.com
   resources:
   - discordbots/status
-  - shopifydbs/status
   - shopifyscrapers/status
   verbs:
   - get
