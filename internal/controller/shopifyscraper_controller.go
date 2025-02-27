@@ -127,7 +127,6 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		logger.Error(err, "did not return data")
 	}
 	command := fmt.Sprintf("echo %s > /shopify/%s", base64.StdEncoding.EncodeToString([]byte(strings.Join(data, " "))), req.Name)
-	fmt.Println(command)
 	if err = execInPod(clientset, config, "default", "shopify-pod", "shopify-pod", command); err != nil {
 		logger.Error(err, "Could not execute command")
 	}
