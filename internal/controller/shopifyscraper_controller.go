@@ -68,7 +68,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	logger := log.FromContext(ctx)
 
 	//Debugging
-	//logger.Info("controller triggered")
+	logger.Info("controller triggered")
 
 	if _, inCluster := os.LookupEnv("KUBERNETES_SERVICE_HOST"); inCluster {
 		config, _ = rest.InClusterConfig()
@@ -126,12 +126,44 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		logger.Error(err, "did not return data")
 	}
-	command := fmt.Sprintf("echo %s > /shopify/%s", base64.StdEncoding.EncodeToString([]byte(strings.Join(data, " "))), req.Name)
-	if err = execInPod(clientset, config, "default", "shopify-pod", "shopify-pod", command); err != nil {
-		logger.Error(err, "Could not execute command")
+
+	encodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data, "")))
+	pushCommand := fmt.Sprintf("echo %s > /shopify/%s", encodedData, req.Name)
+	if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pushCommand); err != nil {
+		logger.Error(err, "could not push data")
 	}
 
-	return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, nil
+	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)
+	encodedOldData, err := execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pullCommand)
+	if err != nil {
+		logger.Error(err, "could not pull data")
+	}
+
+	decodedData, decodedOldData, err := compareBase64Decode([]byte(encodedData), encodedOldData)
+	if err != nil {
+		logger.Error(err, "error in decode")
+		return ctrl.Result{}, err
+	}
+	if decodedData != nil || decodedOldData != nil {
+		var difference []string
+		for _, s := range decodedData {
+			if _, exists := decodedOldData[s]; !exists {
+				difference = append(difference, s)
+			}
+		}
+
+		fmt.Println(difference)
+
+		pushCommand = fmt.Sprintf("echo %s > /shopify/%s", base64.StdEncoding.EncodeToString([]byte(strings.Join(decodedData, ""))), req.Name)
+		if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pushCommand); err != nil {
+			logger.Error(err, "could not push data")
+		}
+
+		return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, nil
+	} else {
+		logger.Info("No difference in data")
+		return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, nil
+	}
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -140,6 +172,41 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&lukemcewencomv1.ShopifyScraper{}).
 		Named("shopifyscraper").
 		Complete(r)
+}
+
+func compareBase64Decode(new, old []byte) ([]string, map[string]struct{}, error) {
+	decoded1, err1 := base64.StdEncoding.DecodeString(string(new))
+	decoded2, err2 := base64.StdEncoding.DecodeString(string(old))
+
+	if err1 != nil || err2 != nil {
+		return nil, nil, fmt.Errorf("error decoding base64: %v, %v", err1, err2)
+	}
+
+	if bytes.Equal(decoded1, decoded2) {
+		return nil, nil, nil
+	} else {
+		return formatStrArr(convertByteToStringArray(decoded1)), createSet(formatStrArr(convertByteToStringArray(decoded2))), nil
+	}
+}
+
+func createSet(slice []string) map[string]struct{} {
+	set := make(map[string]struct{})
+	for _, str := range slice {
+		set[str] = struct{}{} // Use an empty struct to save memory
+	}
+	return set
+}
+
+func formatStrArr(strArr []string) []string {
+	return strings.Split(strings.Join(strArr, ""), ",")
+}
+
+func convertByteToStringArray(b []byte) []string {
+	strArray := make([]string, len(b))
+	for i, k := range b {
+		strArray[i] = string(k)
+	}
+	return strArray
 }
 
 func Scrape(scraper *lukemcewencomv1.ShopifyScraper) ([]string, error) {
@@ -164,7 +231,7 @@ func Scrape(scraper *lukemcewencomv1.ShopifyScraper) ([]string, error) {
 	return data, err
 }
 
-func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, podName, containerName, command string) error {
+func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, podName, containerName, command string) ([]byte, error) {
 	req := clientset.CoreV1().RESTClient().Post().
 		Resource("pods").
 		Name(podName).
@@ -181,7 +248,7 @@ func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, 
 
 	exec, err := remotecommand.NewSPDYExecutor(config, http.MethodPost, req.URL())
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var stdout, stderr bytes.Buffer
@@ -190,7 +257,7 @@ func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, 
 		Stderr: &stderr,
 	})
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return nil
+	return stdout.Bytes(), nil
 }
