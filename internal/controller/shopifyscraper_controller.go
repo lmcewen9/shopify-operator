@@ -126,12 +126,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	if err != nil {
 		logger.Error(err, "did not return data")
 	}
-
 	encodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data, "")))
-	pushCommand := fmt.Sprintf("echo %s > /shopify/%s", encodedData, req.Name)
-	if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pushCommand); err != nil {
-		logger.Error(err, "could not push data")
-	}
 
 	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)
 	encodedOldData, err := execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pullCommand)
@@ -139,7 +134,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		logger.Error(err, "could not pull data")
 	}
 
-	decodedData, decodedOldData, err := compareBase64Decode([]byte(encodedData), encodedOldData)
+	decodedData, decodedOldData, err := compareBase64Decode(encodedData, string(encodedOldData))
 	if err != nil {
 		logger.Error(err, "error in decode")
 		return ctrl.Result{}, err
@@ -154,9 +149,11 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 
 		fmt.Println(difference)
 
-		pushCommand = fmt.Sprintf("echo %s > /shopify/%s", base64.StdEncoding.EncodeToString([]byte(strings.Join(decodedData, ""))), req.Name)
+		pushCommand := fmt.Sprintf("echo %s > /shopify/%s", encodedData, req.Name)
 		if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pushCommand); err != nil {
 			logger.Error(err, "could not push data")
+		} else {
+			logger.Info("successfully pushed data")
 		}
 
 		return ctrl.Result{RequeueAfter: time.Duration(*scraper.Spec.WatchTime) * time.Second}, nil
@@ -174,19 +171,18 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func compareBase64Decode(new, old []byte) ([]string, map[string]struct{}, error) {
-	decoded1, err1 := base64.StdEncoding.DecodeString(string(new))
-	decoded2, err2 := base64.StdEncoding.DecodeString(string(old))
+func compareBase64Decode(new, old string) ([]string, map[string]struct{}, error) {
+	decoded1, err1 := base64.StdEncoding.DecodeString(new)
+	decoded2, err2 := base64.StdEncoding.DecodeString(old)
 
 	if err1 != nil || err2 != nil {
 		return nil, nil, fmt.Errorf("error decoding base64: %v, %v", err1, err2)
 	}
 
-	if bytes.Equal(decoded1, decoded2) {
+	if string(decoded1) == string(decoded2) {
 		return nil, nil, nil
-	} else {
-		return formatStrArr(convertByteToStringArray(decoded1)), createSet(formatStrArr(convertByteToStringArray(decoded2))), nil
 	}
+	return formatStrArr(convertByteToStringArray(decoded1)), createSet(formatStrArr(convertByteToStringArray(decoded2))), nil
 }
 
 func createSet(slice []string) map[string]struct{} {
