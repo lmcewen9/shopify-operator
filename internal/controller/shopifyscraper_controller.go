@@ -21,6 +21,7 @@ import (
 	"context"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"os"
@@ -29,7 +30,6 @@ import (
 
 	_ "github.com/joho/godotenv/autoload"
 	corev1 "k8s.io/api/core/v1"
-
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/kubernetes/scheme"
@@ -128,6 +128,16 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	}
 	encodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data, "")))
 
+	// FOR TESTING AUTOLOAD DATABASE
+	/*tmpEncodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data[:len(data)*3/4], "")))
+	tmpCommand := fmt.Sprintf("echo %s > /shopify/%s", tmpEncodedData, req.Name)
+	if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", tmpCommand); err != nil {
+		logger.Error(err, "could not autoload data")
+	} else {
+		logger.Info("successfully autoloaded data")
+	}*/
+	// END OF AUTOLOAD DATABASE
+
 	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)
 	encodedOldData, err := execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pullCommand)
 	if err != nil {
@@ -147,7 +157,9 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 			}
 		}
 
-		fmt.Println(difference)
+		if err = sendWebhook(difference); err != nil {
+			logger.Error(err, "failed to send webhook")
+		}
 
 		pushCommand := fmt.Sprintf("echo %s > /shopify/%s", encodedData, req.Name)
 		if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pushCommand); err != nil {
@@ -256,4 +268,38 @@ func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, 
 		return nil, err
 	}
 	return stdout.Bytes(), nil
+}
+
+func sendWebhook(d []string) error {
+	//for debugging
+	logger := log.FromContext(context.TODO())
+
+	url := "http://localhost:8888/scraper-webhook"
+
+	data := WebHookData{Message: d}
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		logger.Error(err, "failed to marshal json")
+		return err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		logger.Error(err, "failed to create new request")
+		return err
+	}
+
+	req.Header.Set("Context-Type", "application/json")
+
+	client := &http.Client{Timeout: 5 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		logger.Error(err, "failed to send request")
+		return err
+	}
+	defer resp.Body.Close()
+
+	logger.Info("Webhook response status: " + resp.Status)
+
+	return nil
 }

@@ -18,13 +18,19 @@ package controller
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
+	"io"
+	"net/http"
 	"os"
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
+	"unicode/utf8"
 
 	"github.com/bwmarrin/discordgo"
+	_ "github.com/joho/godotenv/autoload"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -38,6 +44,15 @@ type DiscordBotReconciler struct {
 	client.Client
 	Scheme *runtime.Scheme
 }
+
+type WebHookData struct {
+	Message []string `json:"message"`
+}
+
+var (
+	channelID = os.Getenv("CHANNELID")
+	dg        *discordgo.Session
+)
 
 // +kubebuilder:rbac:groups=lukemcewen.com,resources=discordbots,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=lukemcewen.com,resources=discordbots/status,verbs=get;update;patch
@@ -83,9 +98,63 @@ func (r *DiscordBotReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
+func webhookHandler(w http.ResponseWriter, r *http.Request) {
+	logger := log.FromContext(context.TODO())
+
+	if r.Method != http.MethodPost {
+		http.Error(w, "Invalid request method", http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, "failed to read request body", http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	var data WebHookData
+	err = json.Unmarshal(body, &data)
+	if err != nil {
+		http.Error(w, "invalid json", http.StatusBadRequest)
+		return
+	}
+	if data.Message != nil {
+		logger.Info("recived webhook data")
+	}
+
+	w.WriteHeader(http.StatusOK)
+
+	for dg == nil {
+		logger.Info("dg is not yet set")
+		time.Sleep(2 * time.Second)
+	}
+	logger.Info("dg is set")
+
+	if err := eventHandler(dg, data); err != nil {
+		logger.Error(err, "failed to start eventHandler")
+	}
+}
+
+func SetupWebhookServer(mgr ctrl.Manager) {
+	logger := log.FromContext(context.TODO())
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/scraper-webhook", webhookHandler)
+
+	go func() {
+		logger.Info("webhook server listening on :8888")
+		if err := http.ListenAndServe(":8888", mux); err != nil {
+			logger.Error(err, "failed to start webhook server")
+		}
+	}()
+}
+
 func startDiscordBot(token string, ctx context.Context) {
 	logger := log.FromContext(ctx)
-	dg, err := discordgo.New("Bot " + token)
+	var err error
+
+	dg, err = discordgo.New("Bot " + token)
 	if err != nil {
 		logger.Error(err, "Error creating Discord session")
 		return
@@ -93,7 +162,7 @@ func startDiscordBot(token string, ctx context.Context) {
 
 	dg.AddHandler(messageHandler)
 
-	if err := dg.Open(); err != nil {
+	if err = dg.Open(); err != nil {
 		logger.Error(err, "Error opening Discord connection")
 		return
 	}
@@ -104,6 +173,47 @@ func startDiscordBot(token string, ctx context.Context) {
 	<-stop
 
 	dg.Close()
+}
+
+func sendMessage(s *discordgo.Session, message []string) error {
+	if _, err := s.ChannelMessageSend(channelID, strings.Join(message, "")); err != nil {
+		return err
+	}
+	return nil
+}
+
+func eventHandler(s *discordgo.Session, data WebHookData) error {
+	logger := log.FromContext(context.TODO())
+	logger.Info("Event Handler Triggered")
+
+	message := data.Message
+	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
+		var smallMessage []string
+		count := 0
+		for {
+			smallMessage = append(smallMessage, message[count])
+			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 2000 {
+				smallMessage = smallMessage[:len(smallMessage)-1]
+				if err := sendMessage(s, smallMessage); err != nil {
+					return err
+				}
+				smallMessage = nil
+				count--
+
+			}
+
+			if count == len(message)-1 {
+				if err := sendMessage(s, smallMessage); err != nil {
+					return err
+				}
+				return nil
+			}
+			count++
+		}
+	}
+
+	sendMessage(s, message)
+	return nil
 }
 
 func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {

@@ -6,4 +6,6 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: shopifyscraper-sample
 spec:
-  # TODO(user): Add fields here
+  name: shopifyscraper-sample
+  url: store.example.com  #SHOPIFY STORE DOMAIN
+  watchtime: 60           #TIME IN SECONDS

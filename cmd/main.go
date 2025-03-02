@@ -290,6 +290,8 @@ func main() {
 		setupLog.Info("Pod created successfully!")
 	}()
 
+	controller.SetupWebhookServer(mgr)
+
 	if metricsCertWatcher != nil {
 		setupLog.Info("Adding metrics certificate watcher to manager")
 		if err := mgr.Add(metricsCertWatcher); err != nil {
