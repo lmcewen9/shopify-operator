@@ -29,7 +29,7 @@ type Variants struct {
 // \n
 func (s Product) TextOutput(config *Configuration) string {
 	p := fmt.Sprintf(
-		"Name: %s Category: %s Price: %s Available: %t URL: https://%s/products/%s,",
+		"Name: %s Category: %s Price: %s Available: %t URL: https://%s/products/%s\n,",
 		s.Name, s.Category, s.Variant[0].Price, s.Variant[0].Available, config.URL, s.Product_URL)
 	return p
 }

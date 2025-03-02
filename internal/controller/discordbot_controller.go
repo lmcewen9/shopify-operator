@@ -20,6 +20,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"os"
@@ -51,6 +52,7 @@ type WebHookData struct {
 
 var (
 	channelID = os.Getenv("CHANNELID")
+	Prefix    = "!"
 	dg        *discordgo.Session
 )
 
@@ -185,6 +187,7 @@ func sendMessage(s *discordgo.Session, message []string) error {
 func eventHandler(s *discordgo.Session, data WebHookData) error {
 	logger := log.FromContext(context.TODO())
 	logger.Info("Event Handler Triggered")
+	fmt.Println(data.Message[0])
 
 	message := data.Message
 	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
@@ -220,8 +223,33 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.Bot {
 		return
 	}
+	// Check if the message starts with the prefix
+	if !strings.HasPrefix(m.Content, Prefix) {
+		return
+	}
 
-	if strings.HasPrefix(m.Content, "!ping") {
-		s.ChannelMessageSend(m.ChannelID, "Pong!")
+	// Extract command (removing prefix and splitting arguments)
+	args := strings.Fields(m.Content[len(Prefix):])
+	if len(args) == 0 {
+		return
+	}
+	command := args[0]
+
+	// Handle commands using switch
+	switch command {
+	case "ping":
+		s.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
+
+	case "hello":
+		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Hello, %s! 👋", m.Author.Username))
+
+	case "help":
+		helpMessage := "**Available Commands:**\n" +
+			"`!ping` - Responds with Pong! 🏓\n" +
+			"`!hello` - Greets you 👋\n"
+		s.ChannelMessageSend(m.ChannelID, helpMessage)
+
+	default:
+		s.ChannelMessageSend(m.ChannelID, "Unknown command! Type `!help` for a list of commands.")
 	}
 }
