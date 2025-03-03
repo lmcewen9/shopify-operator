@@ -243,6 +243,8 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	case "hello":
 		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Hello, %s! 👋", m.Author.Username))
 
+	case "add":
+
 	case "help":
 		helpMessage := "**Available Commands:**\n" +
 			"`!ping` - Responds with Pong! 🏓\n" +
