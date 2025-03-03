@@ -113,7 +113,11 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to read request body", http.StatusBadRequest)
 		return
 	}
-	defer r.Body.Close()
+	defer func() {
+		if err := r.Body.Close(); err != nil {
+			logger.Error(err, "failed to close request body")
+		}
+	}()
 
 	var data WebHookData
 	err = json.Unmarshal(body, &data)
@@ -122,7 +126,7 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if data.Message != nil {
-		logger.Info("recived webhook data")
+		logger.Info("received webhook data")
 	}
 
 	w.WriteHeader(http.StatusOK)
@@ -174,7 +178,9 @@ func startDiscordBot(token string, ctx context.Context) {
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
 
-	dg.Close()
+	if err = dg.Close(); err != nil {
+		logger.Error(err, "failed to close *discordgo.Session")
+	}
 }
 
 func sendMessage(s *discordgo.Session, message []string) error {
@@ -215,11 +221,15 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 		}
 	}
 
-	sendMessage(s, message)
+	if err := sendMessage(s, message); err != nil {
+		return err
+	}
 	return nil
 }
 
 func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
+	logger := log.FromContext(context.TODO())
+
 	if m.Author.Bot {
 		return
 	}
@@ -236,12 +246,17 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	command := args[0]
 
 	// Handle commands using switch
+	var err error
 	switch command {
 	case "ping":
-		s.ChannelMessageSend(m.ChannelID, "Pong! 🏓")
+		if _, err = s.ChannelMessageSend(m.ChannelID, "Pong! 🏓"); err != nil {
+			logger.Error(err, "failed to send !ping response")
+		}
 
 	case "hello":
-		s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Hello, %s! 👋", m.Author.Username))
+		if _, err = s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Hello, %s! 👋", m.Author.Username)); err != nil {
+			logger.Error(err, "failed to send !hello response")
+		}
 
 	case "add":
 
@@ -249,9 +264,13 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		helpMessage := "**Available Commands:**\n" +
 			"`!ping` - Responds with Pong! 🏓\n" +
 			"`!hello` - Greets you 👋\n"
-		s.ChannelMessageSend(m.ChannelID, helpMessage)
+		if _, err = s.ChannelMessageSend(m.ChannelID, helpMessage); err != nil {
+			logger.Error(err, "failed to send !help response")
+		}
 
 	default:
-		s.ChannelMessageSend(m.ChannelID, "Unknown command! Type `!help` for a list of commands.")
+		if _, err = s.ChannelMessageSend(m.ChannelID, "Unknown command! Type `!help` for a list of commands."); err != nil {
+			logger.Error(err, "failed to send ! response")
+		}
 	}
 }

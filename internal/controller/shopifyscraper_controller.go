@@ -67,7 +67,7 @@ type ShopifyScraperReconciler struct {
 func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	//Debugging
+	// Debugging
 	logger.Info("controller triggered")
 
 	if _, inCluster := os.LookupEnv("KUBERNETES_SERVICE_HOST"); inCluster {
@@ -129,13 +129,13 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	encodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data, "")))
 
 	// FOR TESTING AUTOLOAD DATABASE
-	/*tmpEncodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data[:len(data)*97/100], "")))
+	/* tmpEncodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data[:len(data)*97/100], "")))
 	tmpCommand := fmt.Sprintf("echo %s > /shopify/%s", tmpEncodedData, req.Name)
 	if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", tmpCommand); err != nil {
 		logger.Error(err, "could not autoload data")
 	} else {
 		logger.Info("successfully autoloaded data")
-	}*/
+	} */
 	// END OF AUTOLOAD DATABASE
 
 	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)
@@ -271,7 +271,7 @@ func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, 
 }
 
 func sendWebhook(d []string) error {
-	//for debugging
+	// for debugging
 	logger := log.FromContext(context.TODO())
 
 	url := "http://localhost:8888/scraper-webhook"
@@ -297,7 +297,11 @@ func sendWebhook(d []string) error {
 		logger.Error(err, "failed to send request")
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() {
+		if err := resp.Body.Close(); err != nil {
+			logger.Error(err, "failed to close request body")
+		}
+	}()
 
 	logger.Info("Webhook response status: " + resp.Status)
 

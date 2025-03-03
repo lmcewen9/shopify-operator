@@ -25,7 +25,7 @@ import (
 
 // DiscordBotSpec defines the desired state of DiscordBot.
 type DiscordBotSpec struct {
-	Token string `json:"token,omitempty"` //omitempty for tests
+	Token string `json:"token,omitempty"` // omitempty for tests
 }
 
 // DiscordBotStatus defines the observed state of DiscordBot.
