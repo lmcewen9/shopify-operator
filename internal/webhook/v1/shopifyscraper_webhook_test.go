@@ -21,7 +21,6 @@ import (
 	. "github.com/onsi/gomega"
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
-	// TODO (user): Add any additional imports if needed
 )
 
 var _ = Describe("ShopifyScraper Webhook", func() {

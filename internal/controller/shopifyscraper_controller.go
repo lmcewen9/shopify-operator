@@ -129,13 +129,13 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	encodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data, "")))
 
 	// FOR TESTING AUTOLOAD DATABASE
-	/* tmpEncodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data[:len(data)*97/100], "")))
+	tmpEncodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data[:len(data)*97/100], "")))
 	tmpCommand := fmt.Sprintf("echo %s > /shopify/%s", tmpEncodedData, req.Name)
 	if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", tmpCommand); err != nil {
 		logger.Error(err, "could not autoload data")
 	} else {
 		logger.Info("successfully autoloaded data")
-	} */
+	}
 	// END OF AUTOLOAD DATABASE
 
 	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)

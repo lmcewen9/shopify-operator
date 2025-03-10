@@ -32,6 +32,8 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/joho/godotenv/autoload"
+	"golang.org/x/exp/rand"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
@@ -51,9 +53,11 @@ type WebHookData struct {
 }
 
 var (
-	channelID = os.Getenv("CHANNELID")
-	Prefix    = "!"
-	dg        *discordgo.Session
+	channelID     = os.Getenv("CHANNELID")
+	Prefix        = "!"
+	dg            *discordgo.Session
+	namespace     string
+	botReconciler *DiscordBotReconciler
 )
 
 // +kubebuilder:rbac:groups=lukemcewen.com,resources=discordbots,verbs=get;list;watch;create;update;patch;delete
@@ -81,6 +85,8 @@ func (r *DiscordBotReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Error(errors.New("need discord token"), "Bot needs Discord Token")
 	}
 
+	namespace = bot.Namespace
+
 	if !bot.Status.Running {
 		go startDiscordBot(bot.Spec.Token, ctx)
 		bot.Status.Running = true
@@ -94,10 +100,35 @@ func (r *DiscordBotReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 // SetupWithManager sets up the controller with the Manager.
 func (r *DiscordBotReconciler) SetupWithManager(mgr ctrl.Manager) error {
+	botReconciler = r
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&lukemcewencomv1.DiscordBot{}).
 		Named("discordbot").
 		Complete(r)
+}
+
+func ptr[T any](value T) *T {
+	return &value
+}
+
+func (r *DiscordBotReconciler) createScraper(name string) error {
+	scraper := &lukemcewencomv1.ShopifyScraper{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      name,
+			Namespace: namespace,
+		},
+		Spec: lukemcewencomv1.ShopifyScraperSpec{
+			Name:      name,
+			Url:       name,
+			WatchTime: ptr(int32(86400)), // seconds in a day
+		},
+	}
+
+	if err := r.Create(context.TODO(), scraper); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func webhookHandler(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +224,6 @@ func sendMessage(s *discordgo.Session, message []string) error {
 func eventHandler(s *discordgo.Session, data WebHookData) error {
 	logger := log.FromContext(context.TODO())
 	logger.Info("Event Handler Triggered")
-	fmt.Println(data.Message[0])
 
 	message := data.Message
 	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
@@ -224,6 +254,45 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 	if err := sendMessage(s, message); err != nil {
 		return err
 	}
+	return nil
+}
+
+func randomHexColor() *int {
+	rand.New(rand.NewSource(uint64(time.Now().UnixNano()))) // Seed for randomness
+	hexValue := rand.Intn(0xFFFFFF)                         // Generate random hex value
+	return &hexValue
+}
+
+func createRole(s *discordgo.Session, guildID, roleName, userID string) error {
+	var roleID string
+	roles, err := s.GuildRoles(guildID)
+	if err != nil {
+		return err
+	}
+
+	for _, role := range roles {
+		if strings.EqualFold(role.Name, roleName) {
+			roleID = role.ID
+			break
+		}
+	}
+
+	if roleID == "" {
+		newRole, err := s.GuildRoleCreate(guildID, &discordgo.RoleParams{
+			Name:  roleName,
+			Color: randomHexColor(),
+			Hoist: ptr(true),
+		})
+		if err != nil {
+			return err
+		}
+		roleID = newRole.ID
+	}
+
+	if err = s.GuildMemberRoleAdd(guildID, userID, roleID); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -259,6 +328,14 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 		}
 
 	case "add":
+		if err = botReconciler.createScraper(args[1]); err != nil {
+			if _, err = s.ChannelMessageSend(m.ChannelID, "unable to create scraper or scrapeer already exists"); err != nil {
+				logger.Error(err, "failed to send message for createScraper()")
+			}
+		}
+		if err = createRole(s, m.GuildID, strings.Replace(args[1], ".", "", -1), m.Author.ID); err != nil {
+			logger.Error(err, "failed to assign you to role")
+		}
 
 	case "help":
 		helpMessage := "**Available Commands:**\n" +

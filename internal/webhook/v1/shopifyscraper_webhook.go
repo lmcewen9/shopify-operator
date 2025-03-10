@@ -19,8 +19,10 @@ package v1
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
@@ -60,13 +62,36 @@ var _ webhook.CustomValidator = &ShopifyScraperCustomValidator{}
 
 // ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type ShopifyScraper.
 func (v *ShopifyScraperCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	logger := logf.FromContext(ctx)
 	shopifyscraper, ok := obj.(*lukemcewencomv1.ShopifyScraper)
 	if !ok {
 		return nil, fmt.Errorf("expected a ShopifyScraper object but got %T", obj)
 	}
 	shopifyscraperlog.Info("Validation for ShopifyScraper upon creation", "name", shopifyscraper.GetName())
 
-	// TODO(user): fill in your validation logic upon object creation.
+	url := shopifyscraper.Spec.Url
+	var allErrs field.ErrorList
+	if url == "" {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("url"), url, "must not be empty"))
+	}
+
+	resp, err := http.Get("https://" + url + "/products.json")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		if err = resp.Body.Close(); err != nil {
+			logger.Error(err, "unable to close response body")
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("url"), url, "not a valid url"))
+	}
+
+	if len(allErrs) > 0 {
+		return nil, allErrs.ToAggregate()
+	}
 
 	return nil, nil
 }
