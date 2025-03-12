@@ -25,6 +25,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"regexp"
 	"strings"
 	"syscall"
 	"time"
@@ -58,6 +59,7 @@ var (
 	dg            *discordgo.Session
 	namespace     string
 	botReconciler *DiscordBotReconciler
+	guildID       string
 )
 
 // +kubebuilder:rbac:groups=lukemcewen.com,resources=discordbots,verbs=get;list;watch;create;update;patch;delete
@@ -214,8 +216,8 @@ func startDiscordBot(token string, ctx context.Context) {
 	}
 }
 
-func sendMessage(s *discordgo.Session, message []string) error {
-	if _, err := s.ChannelMessageSend(channelID, strings.Join(message, "")); err != nil {
+func sendMessage(s *discordgo.Session, message []string, roleID string) error {
+	if _, err := s.ChannelMessageSend(channelID, fmt.Sprintf("<@&%s> %s", roleID, strings.Join(message, ""))); err != nil {
 		return err
 	}
 	return nil
@@ -226,6 +228,8 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 	logger.Info("Event Handler Triggered")
 
 	message := data.Message
+	re := regexp.MustCompile(`https?:\/\/([^\/]+)`)
+	roleID := roleExists(s, guildID, re.FindStringSubmatch(message[0])[1])
 	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
 		var smallMessage []string
 		count := 0
@@ -233,7 +237,7 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 			smallMessage = append(smallMessage, message[count])
 			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 2000 {
 				smallMessage = smallMessage[:len(smallMessage)-1]
-				if err := sendMessage(s, smallMessage); err != nil {
+				if err := sendMessage(s, smallMessage, roleID); err != nil {
 					return err
 				}
 				smallMessage = nil
@@ -242,7 +246,7 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 			}
 
 			if count == len(message)-1 {
-				if err := sendMessage(s, smallMessage); err != nil {
+				if err := sendMessage(s, smallMessage, roleID); err != nil {
 					return err
 				}
 				return nil
@@ -251,7 +255,7 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 		}
 	}
 
-	if err := sendMessage(s, message); err != nil {
+	if err := sendMessage(s, message, roleID); err != nil {
 		return err
 	}
 	return nil
@@ -263,20 +267,22 @@ func randomHexColor() *int {
 	return &hexValue
 }
 
-func createRole(s *discordgo.Session, guildID, roleName, userID string) error {
-	var roleID string
+func roleExists(s *discordgo.Session, guildID, roleName string) string {
 	roles, err := s.GuildRoles(guildID)
 	if err != nil {
-		return err
+		return ""
 	}
 
 	for _, role := range roles {
 		if strings.EqualFold(role.Name, roleName) {
-			roleID = role.ID
-			break
+			return role.ID
 		}
 	}
+	return ""
+}
 
+func createRole(s *discordgo.Session, guildID, roleName, userID string) error {
+	roleID := roleExists(s, guildID, roleName)
 	if roleID == "" {
 		newRole, err := s.GuildRoleCreate(guildID, &discordgo.RoleParams{
 			Name:  roleName,
@@ -289,7 +295,7 @@ func createRole(s *discordgo.Session, guildID, roleName, userID string) error {
 		roleID = newRole.ID
 	}
 
-	if err = s.GuildMemberRoleAdd(guildID, userID, roleID); err != nil {
+	if err := s.GuildMemberRoleAdd(guildID, userID, roleID); err != nil {
 		return err
 	}
 
@@ -333,7 +339,8 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 				logger.Error(err, "failed to send message for createScraper()")
 			}
 		}
-		if err = createRole(s, m.GuildID, args[1], m.Author.ID); err != nil {
+		guildID = m.GuildID
+		if err = createRole(s, guildID, args[1], m.Author.ID); err != nil {
 			logger.Error(err, "failed to assign you to role")
 		}
 
