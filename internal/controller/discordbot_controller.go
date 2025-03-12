@@ -114,7 +114,7 @@ func (r *DiscordBotReconciler) createScraper(name string) error {
 	scraper := &lukemcewencomv1.ShopifyScraper{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "shopify-crd-system",
+			Namespace: "default",
 		},
 		Spec: lukemcewencomv1.ShopifyScraperSpec{
 			Name:      name,

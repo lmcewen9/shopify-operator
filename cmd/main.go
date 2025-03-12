@@ -234,7 +234,7 @@ func main() {
 		pvc := &corev1.PersistentVolumeClaim{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "shopify-pvc",
-				Namespace: "shopify-crd-system",
+				Namespace: "default",
 			},
 			Spec: corev1.PersistentVolumeClaimSpec{
 				StorageClassName: &[]string{"local-path"}[0],
@@ -256,7 +256,7 @@ func main() {
 		pod := &corev1.Pod{
 			ObjectMeta: v1.ObjectMeta{
 				Name:      "shopify-pod",
-				Namespace: "shopify-crd-system",
+				Namespace: "default",
 			},
 			Spec: corev1.PodSpec{
 				Containers: []corev1.Container{
