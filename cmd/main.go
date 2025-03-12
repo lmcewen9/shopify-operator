@@ -42,7 +42,7 @@ import (
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
 	"github.com/lmcewen9/shopify-crd/internal/controller"
-	// +kubebuilder:scaffold:imports
+	webhookv1 "github.com/lmcewen9/shopify-crd/internal/webhook/v1"
 )
 
 var (
@@ -134,6 +134,7 @@ func main() {
 
 	webhookServer := webhook.NewServer(webhook.Options{
 		TLSOpts: webhookTLSOpts,
+		Port:    9443,
 	})
 
 	// Metrics endpoint is enabled in 'config/default/kustomization.yaml'. The Metrics options configure the server.
@@ -220,6 +221,11 @@ func main() {
 		os.Exit(1)
 	}
 
+	if err = webhookv1.SetupShopifyScraperWebhookWithManager(mgr); err != nil {
+		setupLog.Error(err, "unable to create webhook", "webhook", "ShopifyScraper")
+		os.Exit(1)
+	}
+
 	go func() {
 		// Wait a few seconds to ensure the manager is running
 		<-mgr.Elected()
@@ -285,9 +291,9 @@ func main() {
 		err = mgr.GetClient().Create(context.TODO(), pod)
 		if err != nil {
 			setupLog.Error(err, "failed to create pod")
+		} else {
+			setupLog.Info("Pod created successfully!")
 		}
-
-		setupLog.Info("Pod created successfully!")
 	}()
 
 	controller.SetupWebhookServer(mgr)
@@ -303,7 +309,7 @@ func main() {
 	if webhookCertWatcher != nil {
 		setupLog.Info("Adding webhook certificate watcher to manager")
 		if err := mgr.Add(webhookCertWatcher); err != nil {
-			setupLog.Error(err, "unable to add webhook certificate watcher to manager")
+			setupLog.Error(err, "unable to create webhook", "webhook", "ShopifyScraper")
 			os.Exit(1)
 		}
 	}

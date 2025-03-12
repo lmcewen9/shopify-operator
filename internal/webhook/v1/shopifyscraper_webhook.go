@@ -20,12 +20,14 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"net/url"
 
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/validation/field"
 	ctrl "sigs.k8s.io/controller-runtime"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
-	"sigs.k8s.io/controller-runtime/pkg/webhook"
 	"sigs.k8s.io/controller-runtime/pkg/webhook/admission"
 
 	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
@@ -54,30 +56,21 @@ func SetupShopifyScraperWebhookWithManager(mgr ctrl.Manager) error {
 //
 // NOTE: The +kubebuilder:object:generate=false marker prevents controller-gen from generating DeepCopy methods,
 // as this struct is used only for temporary operations and does not need to be deeply copied.
-type ShopifyScraperCustomValidator struct {
-	// TODO(user): Add more fields as needed for validation
-}
+type ShopifyScraperCustomValidator struct{}
 
-var _ webhook.CustomValidator = &ShopifyScraperCustomValidator{}
-
-// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type ShopifyScraper.
-func (v *ShopifyScraperCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
-	logger := logf.FromContext(ctx)
-	shopifyscraper, ok := obj.(*lukemcewencomv1.ShopifyScraper)
-	if !ok {
-		return nil, fmt.Errorf("expected a ShopifyScraper object but got %T", obj)
+func validateShopifyUrl(inputUrl string, fldPath *field.Path) *field.Error {
+	logger := logf.FromContext(context.TODO())
+	if inputUrl == "" {
+		return field.Invalid(fldPath, inputUrl, "url must not be empty")
 	}
-	shopifyscraperlog.Info("Validation for ShopifyScraper upon creation", "name", shopifyscraper.GetName())
-
-	url := shopifyscraper.Spec.Url
-	var allErrs field.ErrorList
-	if url == "" {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("url"), url, "must not be empty"))
-	}
-
-	resp, err := http.Get("https://" + url + "/products.json")
+	_, err := url.ParseRequestURI(inputUrl)
 	if err != nil {
-		return nil, err
+		return field.Invalid(fldPath, inputUrl, err.Error())
+	}
+
+	resp, err := http.Get("https://" + inputUrl + "/products.json")
+	if err != nil {
+		return field.Invalid(fldPath, inputUrl, err.Error())
 	}
 	defer func() {
 		if err = resp.Body.Close(); err != nil {
@@ -86,27 +79,46 @@ func (v *ShopifyScraperCustomValidator) ValidateCreate(ctx context.Context, obj 
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		allErrs = append(allErrs, field.Invalid(field.NewPath("spec").Child("url"), url, "not a valid url"))
+		return field.Invalid(fldPath, inputUrl, err.Error())
 	}
 
-	if len(allErrs) > 0 {
-		return nil, allErrs.ToAggregate()
+	return nil
+}
+
+func validateShopifyScraperSpec(shopifyScraper *lukemcewencomv1.ShopifyScraper) *field.Error {
+	return validateShopifyUrl(
+		shopifyScraper.Spec.Url,
+		field.NewPath("spec").Child("url"))
+}
+
+func validateShopifyScraper(shopifyScraper *lukemcewencomv1.ShopifyScraper) error {
+	var allErrs field.ErrorList
+	if err := validateShopifyScraperSpec(shopifyScraper); err != nil {
+		allErrs = append(allErrs, err)
+	}
+	if len(allErrs) == 0 {
+		return nil
 	}
 
-	return nil, nil
+	return apierrors.NewInvalid(
+		schema.GroupKind{Group: "lukemcewen.com", Kind: "ShopifyScraper"},
+		shopifyScraper.Name, allErrs)
+}
+
+// ValidateCreate implements webhook.CustomValidator so a webhook will be registered for the type ShopifyScraper.
+func (v *ShopifyScraperCustomValidator) ValidateCreate(ctx context.Context, obj runtime.Object) (admission.Warnings, error) {
+	shopifyscraper, ok := obj.(*lukemcewencomv1.ShopifyScraper)
+	if !ok {
+		return nil, fmt.Errorf("expected a ShopifyScraper object but got %T", obj)
+	}
+	shopifyscraperlog.Info("Validation for ShopifyScraper upon creation", "name", shopifyscraper.GetName())
+
+	return nil, validateShopifyScraper(shopifyscraper)
 }
 
 // ValidateUpdate implements webhook.CustomValidator so a webhook will be registered for the type ShopifyScraper.
 func (v *ShopifyScraperCustomValidator) ValidateUpdate(ctx context.Context, oldObj, newObj runtime.Object) (admission.Warnings, error) {
-	shopifyscraper, ok := newObj.(*lukemcewencomv1.ShopifyScraper)
-	if !ok {
-		return nil, fmt.Errorf("expected a ShopifyScraper object for the newObj but got %T", newObj)
-	}
-	shopifyscraperlog.Info("Validation for ShopifyScraper upon update", "name", shopifyscraper.GetName())
-
-	// TODO(user): fill in your validation logic upon object update.
-
-	return nil, nil
+	return v.ValidateCreate(ctx, newObj)
 }
 
 // ValidateDelete implements webhook.CustomValidator so a webhook will be registered for the type ShopifyScraper.
@@ -116,8 +128,6 @@ func (v *ShopifyScraperCustomValidator) ValidateDelete(ctx context.Context, obj 
 		return nil, fmt.Errorf("expected a ShopifyScraper object but got %T", obj)
 	}
 	shopifyscraperlog.Info("Validation for ShopifyScraper upon deletion", "name", shopifyscraper.GetName())
-
-	// TODO(user): fill in your validation logic upon object deletion.
 
 	return nil, nil
 }

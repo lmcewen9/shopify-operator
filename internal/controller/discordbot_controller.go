@@ -329,18 +329,19 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 
 	case "add":
 		if err = botReconciler.createScraper(args[1]); err != nil {
-			if _, err = s.ChannelMessageSend(m.ChannelID, "unable to create scraper or scrapeer already exists"); err != nil {
+			if _, err = s.ChannelMessageSend(m.ChannelID, "unable to create scraper or scraper already exists"); err != nil {
 				logger.Error(err, "failed to send message for createScraper()")
 			}
 		}
-		if err = createRole(s, m.GuildID, strings.Replace(args[1], ".", "", -1), m.Author.ID); err != nil {
+		if err = createRole(s, m.GuildID, args[1], m.Author.ID); err != nil {
 			logger.Error(err, "failed to assign you to role")
 		}
 
 	case "help":
 		helpMessage := "**Available Commands:**\n" +
 			"`!ping` - Responds with Pong! 🏓\n" +
-			"`!hello` - Greets you 👋\n"
+			"`!hello` - Greets you 👋\n" +
+			"`!add <store domain>` - i.e. `!add store.example.com`, creates Shopify Scraper and adds user to role"
 		if _, err = s.ChannelMessageSend(m.ChannelID, helpMessage); err != nil {
 			logger.Error(err, "failed to send !help response")
 		}
