@@ -20,6 +20,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -63,18 +64,15 @@ func validateShopifyUrl(inputUrl string, fldPath *field.Path) *field.Error {
 		return field.Invalid(fldPath, inputUrl, "url must not be empty")
 	}
 
-	resp, err := http.Get("https://" + inputUrl + "/products.json")
-	if err != nil {
-		return field.Invalid(fldPath, inputUrl, err.Error())
-	}
+	resp, _ := http.Get("https://" + inputUrl + "/products.json")
 	defer func() {
-		if err = resp.Body.Close(); err != nil {
+		if err := resp.Body.Close(); err != nil {
 			logger.Error(err, "unable to close response body")
 		}
 	}()
 
 	if resp.StatusCode != http.StatusOK {
-		return field.Invalid(fldPath, inputUrl, err.Error())
+		return field.Invalid(fldPath, inputUrl, fmt.Errorf("%s", strconv.Itoa(http.StatusForbidden)).Error())
 	}
 
 	return nil
