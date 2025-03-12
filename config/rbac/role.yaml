@@ -9,6 +9,7 @@ rules:
   resources:
   - discordbots
   - shopifyscrapers
+  - pods
   verbs:
   - create
   - delete
