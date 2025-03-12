@@ -57,7 +57,6 @@ var (
 	channelID     = os.Getenv("CHANNELID")
 	Prefix        = "!"
 	dg            *discordgo.Session
-	namespace     string
 	botReconciler *DiscordBotReconciler
 	guildID       string
 )
@@ -87,8 +86,6 @@ func (r *DiscordBotReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		logger.Error(errors.New("need discord token"), "Bot needs Discord Token")
 	}
 
-	namespace = bot.Namespace
-
 	if !bot.Status.Running {
 		go startDiscordBot(bot.Spec.Token, ctx)
 		bot.Status.Running = true
@@ -117,7 +114,7 @@ func (r *DiscordBotReconciler) createScraper(name string) error {
 	scraper := &lukemcewencomv1.ShopifyScraper{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: namespace,
+			Namespace: "shopify-crd-system",
 		},
 		Spec: lukemcewencomv1.ShopifyScraperSpec{
 			Name:      name,
