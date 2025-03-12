@@ -6,11 +6,9 @@ metadata:
 rules:
 - apiGroups:
   - lukemcewen.com
-  - core
   resources:
   - discordbots
   - shopifyscrapers
-  - pods
   verbs:
   - create
   - delete

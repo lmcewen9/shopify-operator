@@ -16,7 +16,7 @@ namePrefix: shopify-crd-
 
 resources:
 - ../crd
-- ../rbac
+#- ../rbac
 - ../manager
 # [WEBHOOK] To enable webhook, uncomment all the sections with [WEBHOOK] prefix including the one in
 # crd/kustomization.yaml
