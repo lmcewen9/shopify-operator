@@ -14,4 +14,4 @@ patches:
 # [WEBHOOK] To enable webhook, uncomment the following section
 # the following config is for teaching kustomize how to do kustomization for CRDs.
 #configurations:
-#- kustomizeconfig.yaml
+- kustomizeconfig.yaml
