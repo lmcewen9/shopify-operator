@@ -2,5 +2,4 @@
 resources:
 - v1_shopifyscraper.yaml
 - v1_discordbot.yaml
-- v1_shopifydb.yaml
 # +kubebuilder:scaffold:manifestskustomizesamples
