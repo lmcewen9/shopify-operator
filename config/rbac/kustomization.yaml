@@ -22,9 +22,6 @@ resources:
 # default, aiding admins in cluster management. Those roles are
 # not used by the {{ .ProjectName }} itself. You can comment the following lines
 # if you do not want those helpers be installed with your Project.
-- shopifydb_admin_role.yaml
-- shopifydb_editor_role.yaml
-- shopifydb_viewer_role.yaml
 - discordbot_admin_role.yaml
 - discordbot_editor_role.yaml
 - discordbot_viewer_role.yaml
