@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -25,9 +24,7 @@ import (
 
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -226,7 +223,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
+	/* go func() {
 		// Wait a few seconds to ensure the manager is running
 		<-mgr.Elected()
 
@@ -294,7 +291,7 @@ func main() {
 		} else {
 			setupLog.Info("Pod created successfully!")
 		}
-	}()
+	}() */
 
 	controller.SetupWebhookServer(mgr)
 

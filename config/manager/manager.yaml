@@ -96,3 +96,37 @@ spec:
       volumes: []
       serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shopify-pvc
+  namespace: system
+spec:
+  storageClassName: local-path
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: shopify-pod
+  namespace: system
+spec:
+  containers:
+    name: shopify-pod
+    image: alpine:latest
+    imagePullPolicy: IfNotPresent
+    command:
+    - sleep
+    - infinity
+    volumeMounts:
+    - name: shopify-storagee
+      mountPath: /shopify
+  volumes:
+  - name: shopify-storage
+    persistentVolumeClaim:
+      claimName: shopify-pvc
