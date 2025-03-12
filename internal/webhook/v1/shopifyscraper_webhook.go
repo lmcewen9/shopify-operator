@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"net/url"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -62,10 +61,6 @@ func validateShopifyUrl(inputUrl string, fldPath *field.Path) *field.Error {
 	logger := logf.FromContext(context.TODO())
 	if inputUrl == "" {
 		return field.Invalid(fldPath, inputUrl, "url must not be empty")
-	}
-	_, err := url.ParseRequestURI(inputUrl)
-	if err != nil {
-		return field.Invalid(fldPath, inputUrl, err.Error())
 	}
 
 	resp, err := http.Get("https://" + inputUrl + "/products.json")
