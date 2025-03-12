@@ -100,10 +100,10 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: shopify-pvc
+  name: pvc
   namespace: system
 spec:
-  storageClassName: local-path
+  storageClassName: standard
   accessModes:
   - ReadWriteOnce
   resources:
@@ -113,20 +113,20 @@ spec:
 apiVersion: v1
 kind: Pod
 metadata:
-  name: shopify-pod
+  name: pod
   namespace: system
+  labels:
+    app: pod
 spec:
   containers:
-    name: shopify-pod
+  - name: pod
     image: alpine:latest
     imagePullPolicy: IfNotPresent
-    command:
-    - sleep
-    - infinity
+    command: ["sleep", "infinity"]
     volumeMounts:
-    - name: shopify-storagee
+    - name: shopify-storage
       mountPath: /shopify
   volumes:
   - name: shopify-storage
     persistentVolumeClaim:
-      claimName: shopify-pvc
+      claimName: shopify-crd-pvc
