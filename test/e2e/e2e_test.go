@@ -174,7 +174,7 @@ var _ = Describe("Manager", Ordered, func() {
 			By("creating or creating a ClusterRoleBinding for the service account to allow access to metrics")
 			cmd := exec.Command("kubectl", "get", "clusterrolebinding", metricsRoleBindingName)
 			_, err := utils.Run(cmd)
-			if Expect(err).To(HaveOccurred()) {
+			if !Expect(err).NotTo(HaveOccurred()) {
 				cmd = exec.Command("kubectl", "create", "clusterrolebinding", metricsRoleBindingName,
 					"--clusterrole=shopify-crd-metrics-reader",
 					fmt.Sprintf("--serviceaccount=%s:%s", namespace, serviceAccountName),
