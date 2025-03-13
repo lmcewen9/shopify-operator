@@ -17,7 +17,6 @@ limitations under the License.
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"flag"
 	"os"
@@ -26,9 +25,6 @@ import (
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 
-	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
-	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -227,76 +223,6 @@ func main() {
 		os.Exit(1)
 	}
 
-	go func() {
-		// Wait a few seconds to ensure the manager is running
-		<-mgr.Elected()
-
-		// Define the pvc spec
-		pvc := &corev1.PersistentVolumeClaim{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "shopify-pvc",
-				Namespace: "default",
-			},
-			Spec: corev1.PersistentVolumeClaimSpec{
-				StorageClassName: &[]string{"local-path"}[0],
-				AccessModes:      []corev1.PersistentVolumeAccessMode{corev1.ReadWriteOnce},
-				Resources: corev1.VolumeResourceRequirements{
-					Requests: corev1.ResourceList{
-						corev1.ResourceStorage: resource.MustParse("500Mi"),
-					},
-				},
-			},
-		}
-
-		err := mgr.GetClient().Create(context.TODO(), pvc)
-		if err != nil {
-			setupLog.Error(err, "failed to create pvc")
-		}
-
-		// Define the pod spec
-		pod := &corev1.Pod{
-			ObjectMeta: v1.ObjectMeta{
-				Name:      "shopify-pod",
-				Namespace: "shopify-crd-system",
-			},
-			Spec: corev1.PodSpec{
-				Containers: []corev1.Container{
-					{
-						Name:            "shopify-pod",
-						Image:           "alpine:latest",
-						ImagePullPolicy: corev1.PullIfNotPresent,
-						Command:         []string{"sleep", "infinity"},
-						VolumeMounts: []corev1.VolumeMount{
-							{
-								Name:      "shopify-storage",
-								MountPath: "/shopify",
-							},
-						},
-					},
-				},
-
-				Volumes: []corev1.Volume{
-					{
-						Name: "shopify-storage",
-						VolumeSource: corev1.VolumeSource{
-							PersistentVolumeClaim: &corev1.PersistentVolumeClaimVolumeSource{
-								ClaimName: "shopify-pvc",
-							},
-						},
-					},
-				},
-			},
-		}
-
-		// Create the pod
-		err = mgr.GetClient().Create(context.TODO(), pod)
-		if err != nil {
-			setupLog.Error(err, "failed to create pod")
-		} else {
-			setupLog.Info("Pod created successfully!")
-		}
-	}()
-
 	controller.SetupWebhookServer(mgr)
 
 	if metricsCertWatcher != nil {
@@ -331,5 +257,5 @@ func main() {
 	}
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;delete;exec
-// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=get;list;watch;create;update;delete
+// +kubebuilder:rbac:groups="",resources=pods,verbs=exec
+// +kubebuilder:rbac:groups="",resources=persistentvolumeclaims,verbs=create
