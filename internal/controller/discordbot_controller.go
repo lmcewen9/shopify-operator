@@ -227,6 +227,7 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 	message := data.Message
 	re := regexp.MustCompile(`https?:\/\/([^\/]+)`)
 	roleID := roleExists(s, guildID, re.FindStringSubmatch(message[0])[1])
+	logger.Info("found roleID")
 	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
 		var smallMessage []string
 		count := 0
@@ -234,6 +235,7 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 			smallMessage = append(smallMessage, message[count])
 			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 2000 {
 				smallMessage = smallMessage[:len(smallMessage)-1]
+				logger.Info("sending website update to discordgo")
 				if err := sendMessage(s, smallMessage, roleID); err != nil {
 					return err
 				}
