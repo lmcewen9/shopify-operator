@@ -65,6 +65,7 @@ spec:
           - --health-probe-bind-address=:8081
         image: controller:latest
         name: manager
+        imagePullPolicy: ALways
         ports: []
         securityContext:
           allowPrivilegeEscalation: false
