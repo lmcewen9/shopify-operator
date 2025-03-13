@@ -195,8 +195,6 @@ func startDiscordBot(token string, ctx context.Context) {
 		return
 	}
 
-	dg.LogLevel = discordgo.LogInformational
-
 	dg.AddHandler(messageHandler)
 
 	if err = dg.Open(); err != nil {
