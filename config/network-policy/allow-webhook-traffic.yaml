@@ -18,10 +18,10 @@ spec:
     - Ingress
   ingress:
     # This allows ingress traffic from any namespace with the label webhook: enabled
-    #- from:
-    #  - namespaceSelector:
-    #      matchLabels:
-    #        webhook: enabled # Only from namespaces with this label
+    - from:
+      - namespaceSelector:
+          matchLabels:
+            webhook: enabled # Only from namespaces with this label
       ports:
         - port: 443
           protocol: TCP
