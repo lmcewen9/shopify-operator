@@ -129,9 +129,10 @@ spec:
     imagePullPolicy: IfNotPresent
     securityContext:
       allowPrivilegeEscalation: false
+      runAsNonRoot: true
       capabilities:
         drop:
-          - All
+          - ALL
     command: ["sleep", "infinity"]
     volumeMounts:
     - name: shopify-storage
