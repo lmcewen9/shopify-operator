@@ -131,7 +131,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// FOR TESTING AUTOLOAD DATABASE
 	/* tmpEncodedData := base64.StdEncoding.EncodeToString([]byte(strings.Join(data[:len(data)*97/100], "")))
 	tmpCommand := fmt.Sprintf("echo %s > /shopify/%s", tmpEncodedData, req.Name)
-	if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", tmpCommand); err != nil {
+	if _, err = execInPod(clientset, config, "shopify-crd-system", "shopify-crd-pod", "shopify-crd-pod", tmpCommand); err != nil {
 		logger.Error(err, "could not autoload data")
 	} else {
 		logger.Info("successfully autoloaded data")
@@ -139,7 +139,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 	// END OF AUTOLOAD DATABASE
 
 	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)
-	encodedOldData, err := execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pullCommand)
+	encodedOldData, err := execInPod(clientset, config, "shopify-crd-system", "shopify-crd-pod", "shopify-crd-pod", pullCommand)
 	if err != nil {
 		logger.Error(err, "could not pull data")
 	}
@@ -162,7 +162,7 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		}
 
 		pushCommand := fmt.Sprintf("echo %s > /shopify/%s", encodedData, req.Name)
-		if _, err = execInPod(clientset, config, req.Namespace, "shopify-pod", "shopify-pod", pushCommand); err != nil {
+		if _, err = execInPod(clientset, config, "shopify-crd-system", "shopify-crd-pod", "shopify-crd-pod", pushCommand); err != nil {
 			logger.Error(err, "could not push data")
 		} else {
 			logger.Info("successfully pushed data")
