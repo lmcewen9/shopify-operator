@@ -7,15 +7,9 @@ rules:
 - apiGroups:
   - ""
   resources:
-  - pods
+  - pods/exec
   verbs:
   - create
-  - delete
-  - exec
-  - get
-  - list
-  - update
-  - watch
 - apiGroups:
   - lukemcewen.com
   resources:

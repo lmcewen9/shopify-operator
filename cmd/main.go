@@ -257,4 +257,4 @@ func main() {
 	}
 }
 
-// +kubebuilder:rbac:groups="",resources=pods,verbs=get;list;watch;create;update;delete;exec
+// +kubebuilder:rbac:groups="",resources=pods/exec,verbs=create
