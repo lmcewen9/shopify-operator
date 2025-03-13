@@ -5,6 +5,8 @@ metadata:
     control-plane: controller-manager
     app.kubernetes.io/name: shopify-crd
     app.kubernetes.io/managed-by: kustomize
+    metrics: enabled
+    webhook: enabled
   name: system
 ---
 apiVersion: apps/v1
