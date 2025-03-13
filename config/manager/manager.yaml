@@ -116,10 +116,10 @@ metadata:
   name: pod
   namespace: system
   labels:
-    app: pod
+    app: shopify-crd-pod
 spec:
   containers:
-  - name: pod
+  - name: shopify-crd-pod
     image: alpine:3.21
     imagePullPolicy: IfNotPresent
     command: ["sleep", "infinity"]
