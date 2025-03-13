@@ -67,9 +67,6 @@ type ShopifyScraperReconciler struct {
 func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	logger := log.FromContext(ctx)
 
-	// Debugging
-	logger.Info("controller triggered")
-
 	if _, inCluster := os.LookupEnv("KUBERNETES_SERVICE_HOST"); inCluster {
 		config, _ = rest.InClusterConfig()
 	}
@@ -271,21 +268,17 @@ func execInPod(clientset *kubernetes.Clientset, config *rest.Config, namespace, 
 }
 
 func sendWebhook(d []string) error {
-	// for debugging
-	logger := log.FromContext(context.TODO())
 
 	url := "http://localhost:8888/scraper-webhook"
 
 	data := WebHookData{Message: d}
 	jsonData, err := json.Marshal(data)
 	if err != nil {
-		logger.Error(err, "failed to marshal json")
 		return err
 	}
 
 	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
 	if err != nil {
-		logger.Error(err, "failed to create new request")
 		return err
 	}
 
@@ -294,16 +287,13 @@ func sendWebhook(d []string) error {
 	client := &http.Client{Timeout: 5 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		logger.Error(err, "failed to send request")
 		return err
 	}
 	defer func() {
-		if err := resp.Body.Close(); err != nil {
-			logger.Error(err, "failed to close request body")
+		if e := resp.Body.Close(); err != nil {
+			err = e
 		}
 	}()
-
-	logger.Info("Webhook response status: " + resp.Status)
 
 	return nil
 }

@@ -223,7 +223,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	controller.SetupWebhookServer(mgr)
+	controller.SetupDataTransferWebhookWithManager(mgr)
 
 	if metricsCertWatcher != nil {
 		setupLog.Info("Adding metrics certificate watcher to manager")

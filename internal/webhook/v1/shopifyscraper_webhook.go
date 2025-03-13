@@ -59,7 +59,6 @@ func SetupShopifyScraperWebhookWithManager(mgr ctrl.Manager) error {
 type ShopifyScraperCustomValidator struct{}
 
 func validateShopifyUrl(inputUrl string, fldPath *field.Path) *field.Error {
-	logger := logf.FromContext(context.TODO())
 	if inputUrl == "" {
 		return field.Invalid(fldPath, inputUrl, "url must not be empty")
 	}
@@ -67,7 +66,7 @@ func validateShopifyUrl(inputUrl string, fldPath *field.Path) *field.Error {
 	resp, _ := http.Get("https://" + inputUrl + "/products.json")
 	defer func() {
 		if err := resp.Body.Close(); err != nil {
-			logger.Error(err, "unable to close response body")
+			shopifyscraperlog.Error(err, "failed to close response body")
 		}
 	}()
 

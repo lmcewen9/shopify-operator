@@ -162,18 +162,16 @@ func webhookHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	for dg == nil {
-		logger.Info("dg is not yet set")
 		time.Sleep(2 * time.Second)
 	}
-	logger.Info("dg is set")
 
 	if err := eventHandler(dg, data); err != nil {
 		logger.Error(err, "failed to start eventHandler")
 	}
 }
 
-func SetupWebhookServer(mgr ctrl.Manager) {
-	logger := log.FromContext(context.TODO())
+func SetupDataTransferWebhookWithManager(mgr ctrl.Manager) {
+	logger := mgr.GetLogger()
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/scraper-webhook", webhookHandler)
@@ -181,7 +179,8 @@ func SetupWebhookServer(mgr ctrl.Manager) {
 	go func() {
 		logger.Info("webhook server listening on :8888")
 		if err := http.ListenAndServe(":8888", mux); err != nil {
-			logger.Error(err, "failed to start webhook server")
+			logger.Error(err, "unable to create webhook", "webhook", "DataTransfer")
+			os.Exit(1)
 		}
 	}()
 }
@@ -221,13 +220,9 @@ func sendMessage(s *discordgo.Session, message []string, roleID string) error {
 }
 
 func eventHandler(s *discordgo.Session, data WebHookData) error {
-	logger := log.FromContext(context.TODO())
-	logger.Info("Event Handler Triggered")
-
 	message := data.Message
 	re := regexp.MustCompile(`https?:\/\/([^\/]+)`)
 	roleID := roleExists(s, guildID, re.FindStringSubmatch(message[0])[1])
-	logger.Info("found roleID")
 	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
 		var smallMessage []string
 		count := 0
@@ -235,7 +230,6 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 			smallMessage = append(smallMessage, message[count])
 			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 2000 {
 				smallMessage = smallMessage[:len(smallMessage)-1]
-				logger.Info("sending website update to discordgo")
 				if err := sendMessage(s, smallMessage, roleID); err != nil {
 					return err
 				}
