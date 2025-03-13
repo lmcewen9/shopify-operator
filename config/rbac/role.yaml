@@ -5,6 +5,29 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
+  - ""
+  resources:
+  - persistentvolumeclaims
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
+  - ""
+  resources:
+  - pods
+  verbs:
+  - create
+  - delete
+  - exec
+  - get
+  - list
+  - update
+  - watch
+- apiGroups:
   - lukemcewen.com
   resources:
   - discordbots
