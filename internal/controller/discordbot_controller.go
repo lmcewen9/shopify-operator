@@ -195,6 +195,8 @@ func startDiscordBot(token string, ctx context.Context) {
 		return
 	}
 
+	dg.LogLevel = discordgo.LogDebug
+
 	dg.AddHandler(messageHandler)
 
 	if err = dg.Open(); err != nil {
@@ -213,10 +215,6 @@ func startDiscordBot(token string, ctx context.Context) {
 }
 
 func sendMessage(s *discordgo.Session, message []string, roleID string) error {
-	logger := log.FromContext(context.Background())
-	logger.Info(channelID)
-	messageSend := fmt.Sprintf("<@&%s> %s", roleID, strings.Join(message, ""))
-	logger.Info(messageSend)
 	if _, err := s.ChannelMessageSend(channelID, fmt.Sprintf("<@&%s> %s", roleID, strings.Join(message, ""))); err != nil {
 		return err
 	}
