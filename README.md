@@ -32,7 +32,7 @@ make install
 **Deploy the Manager to the cluster with the image specified by `IMG`:**
 
 ```sh
-make deploy IMG=<some-registry>/shopify-crd:tag
+make deploy IMG=quwen/shopify-operator:v0.0.1
 ```
 
 > **NOTE**: If you encounter RBAC errors, you may need to grant yourself cluster-admin
@@ -75,7 +75,7 @@ Following the options to release and provide this solution to the users.
 1. Build the installer for the image built and published in the registry:
 
 ```sh
-make build-installer IMG=<some-registry>/shopify-crd:tag
+make build-installer IMG=quwen/shopify-operator:v0.0.1
 ```
 
 **NOTE:** The makefile target mentioned above generates an 'install.yaml'
@@ -89,7 +89,7 @@ Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
 the project, i.e.:
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/<org>/shopify-crd/<tag or branch>/dist/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/lmcewen9/shopify-crd/v0.0.1/dist/install.yaml
 ```
 
 ### By providing a Helm Chart
