@@ -54,7 +54,7 @@ type WebHookData struct {
 }
 
 var (
-	channelID     = os.Getenv("CHANNELID")
+	channelID     string
 	Prefix        = "!"
 	dg            *discordgo.Session
 	botReconciler *DiscordBotReconciler
@@ -301,6 +301,7 @@ func messageHandler(s *discordgo.Session, m *discordgo.MessageCreate) {
 	if m.Author.Bot {
 		return
 	}
+	channelID = m.ChannelID
 	// Check if the message starts with the prefix
 	if !strings.HasPrefix(m.Content, Prefix) {
 		return
