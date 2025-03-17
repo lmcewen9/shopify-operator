@@ -1,0 +1,45 @@
+{{- if .Values.rbac.enable }}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    {{- include "chart.labels" . | nindent 4 }}
+  name: shopify-operator-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots
+  - shopifyscrapers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/finalizers
+  - shopifyscrapers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/status
+  - shopifyscrapers/status
+  verbs:
+  - get
+  - patch
+  - update
+{{- end -}}
