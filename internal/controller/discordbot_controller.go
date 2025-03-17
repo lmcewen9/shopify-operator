@@ -213,8 +213,6 @@ func startDiscordBot(token string, ctx context.Context) {
 }
 
 func sendMessage(s *discordgo.Session, message []string, roleID string) error {
-	fmt.Printf("pre message size: %d\n", utf8.RuneCountInString(strings.Join(message, "")))
-	fmt.Printf("post message size: %d\n", utf8.RuneCountInString(fmt.Sprintf("<@%s> %s", roleID, strings.Join(message, ""))))
 	if _, err := s.ChannelMessageSend(channelID, fmt.Sprintf("<@&%s> %s", roleID, strings.Join(message, ""))); err != nil {
 		return err
 	}
