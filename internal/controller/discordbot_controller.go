@@ -29,7 +29,6 @@ import (
 	"strings"
 	"syscall"
 	"time"
-	"unicode/utf8"
 
 	"github.com/bwmarrin/discordgo"
 	_ "github.com/joho/godotenv/autoload"
@@ -223,12 +222,12 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 	message := data.Message
 	re := regexp.MustCompile(`https?:\/\/([^\/]+)`)
 	roleID := roleExists(s, guildID, re.FindStringSubmatch(message[0])[1])
-	if utf8.RuneCountInString(strings.Join(message, "")) > 1978 {
+	if len(strings.Join(message, "")) > 2000-(len(roleID)+2) {
 		var smallMessage []string
 		count := 0
 		for {
 			smallMessage = append(smallMessage, message[count])
-			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 1978 {
+			if len(strings.Join(smallMessage, "")) > 2000-(len(roleID)+1) {
 				smallMessage = smallMessage[:len(smallMessage)-1]
 				if err := sendMessage(s, smallMessage, roleID); err != nil {
 					return err
