@@ -1,0 +1,785 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+    control-plane: controller-manager
+    metrics: enabled
+    webhook: enabled
+  name: shopify-operator-system
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.1
+  name: discordbots.lukemcewen.com
+spec:
+  group: lukemcewen.com
+  names:
+    kind: DiscordBot
+    listKind: DiscordBotList
+    plural: discordbots
+    singular: discordbot
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: DiscordBot is the Schema for the discordbots API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: DiscordBotSpec defines the desired state of DiscordBot.
+            properties:
+              token:
+                type: string
+            type: object
+          status:
+            description: DiscordBotStatus defines the observed state of DiscordBot.
+            properties:
+              running:
+                type: boolean
+            required:
+            - running
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.1
+  name: shopifyscrapers.lukemcewen.com
+spec:
+  group: lukemcewen.com
+  names:
+    kind: ShopifyScraper
+    listKind: ShopifyScraperList
+    plural: shopifyscrapers
+    singular: shopifyscraper
+  scope: Namespaced
+  versions:
+  - name: v1
+    schema:
+      openAPIV3Schema:
+        description: ShopifyScraper is the Schema for the shopifyscrapers API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: ShopifyScraperSpec defines the desired state of ShopifyScraper.
+            properties:
+              name:
+                type: string
+              url:
+                type: string
+              watchtime:
+                format: int32
+                type: integer
+            required:
+            - name
+            - url
+            - watchtime
+            type: object
+          status:
+            description: ShopifyScraperStatus defines the observed state of ShopifyScraper.
+            properties:
+              active:
+                items:
+                  description: ObjectReference contains enough information to let
+                    you inspect or modify the referred object.
+                  properties:
+                    apiVersion:
+                      description: API version of the referent.
+                      type: string
+                    fieldPath:
+                      description: |-
+                        If referring to a piece of an object instead of an entire object, this string
+                        should contain a valid JSON/Go field access statement, such as desiredState.manifest.containers[2].
+                        For example, if the object reference is to a container within a pod, this would take on a value like:
+                        "spec.containers{name}" (where "name" refers to the name of the container that triggered
+                        the event) or if no container name is specified "spec.containers[2]" (container with
+                        index 2 in this pod). This syntax is chosen only to have some well-defined way of
+                        referencing a part of an object.
+                      type: string
+                    kind:
+                      description: |-
+                        Kind of the referent.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+                      type: string
+                    name:
+                      description: |-
+                        Name of the referent.
+                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names
+                      type: string
+                    namespace:
+                      description: |-
+                        Namespace of the referent.
+                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/
+                      type: string
+                    resourceVersion:
+                      description: |-
+                        Specific resourceVersion to which this reference is made, if any.
+                        More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency
+                      type: string
+                    uid:
+                      description: |-
+                        UID of the referent.
+                        More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids
+                      type: string
+                  type: object
+                  x-kubernetes-map-type: atomic
+                type: array
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-controller-manager
+  namespace: shopify-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-leader-election-role
+  namespace: shopify-operator-system
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - configmaps
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - coordination.k8s.io
+  resources:
+  - leases
+  verbs:
+  - get
+  - list
+  - watch
+  - create
+  - update
+  - patch
+  - delete
+- apiGroups:
+  - ""
+  resources:
+  - events
+  verbs:
+  - create
+  - patch
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-discordbot-admin-role
+rules:
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots
+  verbs:
+  - '*'
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-discordbot-editor-role
+rules:
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-discordbot-viewer-role
+rules:
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: shopify-operator-manager-role
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - pods/exec
+  verbs:
+  - create
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots
+  - shopifyscrapers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/finalizers
+  - shopifyscrapers/finalizers
+  verbs:
+  - update
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - discordbots/status
+  - shopifyscrapers/status
+  verbs:
+  - get
+  - patch
+  - update
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: shopify-operator-metrics-auth-role
+rules:
+- apiGroups:
+  - authentication.k8s.io
+  resources:
+  - tokenreviews
+  verbs:
+  - create
+- apiGroups:
+  - authorization.k8s.io
+  resources:
+  - subjectaccessreviews
+  verbs:
+  - create
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: shopify-operator-metrics-reader
+rules:
+- nonResourceURLs:
+  - /metrics
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-shopifyscraper-admin-role
+rules:
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - shopifyscrapers
+  verbs:
+  - '*'
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - shopifyscrapers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-shopifyscraper-editor-role
+rules:
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - shopifyscrapers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - shopifyscrapers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-shopifyscraper-viewer-role
+rules:
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - shopifyscrapers
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - lukemcewen.com
+  resources:
+  - shopifyscrapers/status
+  verbs:
+  - get
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-leader-election-rolebinding
+  namespace: shopify-operator-system
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: shopify-operator-leader-election-role
+subjects:
+- kind: ServiceAccount
+  name: shopify-operator-controller-manager
+  namespace: shopify-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-manager-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: shopify-operator-manager-role
+subjects:
+- kind: ServiceAccount
+  name: shopify-operator-controller-manager
+  namespace: shopify-operator-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: shopify-operator-metrics-auth-rolebinding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: shopify-operator-metrics-auth-role
+subjects:
+- kind: ServiceAccount
+  name: shopify-operator-controller-manager
+  namespace: shopify-operator-system
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+    control-plane: controller-manager
+  name: shopify-operator-controller-manager-metrics-service
+  namespace: shopify-operator-system
+spec:
+  ports:
+  - name: https
+    port: 8443
+    protocol: TCP
+    targetPort: 8443
+  selector:
+    app.kubernetes.io/name: shopify-operator
+    control-plane: controller-manager
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-webhook-service
+  namespace: shopify-operator-system
+spec:
+  ports:
+  - port: 443
+    protocol: TCP
+    targetPort: 9443
+  selector:
+    app.kubernetes.io/name: shopify-operator
+    control-plane: controller-manager
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shopify-operator-pvc
+  namespace: shopify-operator-system
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  storageClassName: standard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+    control-plane: controller-manager
+  name: shopify-operator-controller-manager
+  namespace: shopify-operator-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shopify-operator
+      control-plane: controller-manager
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/default-container: manager
+      labels:
+        app.kubernetes.io/name: shopify-operator
+        control-plane: controller-manager
+    spec:
+      containers:
+      - args:
+        - --metrics-bind-address=:8443
+        - --leader-elect
+        - --health-probe-bind-address=:8081
+        - --webhook-cert-path=/tmp/k8s-webhook-server/serving-certs
+        command:
+        - /manager
+        image: quwen/shopify-operator:v0.0.1
+        imagePullPolicy: Always
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8081
+          initialDelaySeconds: 15
+          periodSeconds: 20
+        name: manager
+        ports:
+        - containerPort: 9443
+          name: webhook-server
+          protocol: TCP
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8081
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 500m
+            memory: 128Mi
+          requests:
+            cpu: 10m
+            memory: 64Mi
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+        volumeMounts:
+        - mountPath: /tmp/k8s-webhook-server/serving-certs
+          name: webhook-certs
+          readOnly: true
+      securityContext:
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      serviceAccountName: shopify-operator-controller-manager
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: webhook-certs
+        secret:
+          secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-metrics-certs
+  namespace: shopify-operator-system
+spec:
+  dnsNames:
+  - shopify-operator-controller-manager-metrics-service.shopify-operator-system.svc
+  - shopify-operator-controller-manager-metrics-service.shopify-operator-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: shopify-operator-selfsigned-issuer
+  secretName: metrics-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-serving-cert
+  namespace: shopify-operator-system
+spec:
+  dnsNames:
+  - shopify-operator-webhook-service.shopify-operator-system.svc
+  - shopify-operator-webhook-service.shopify-operator-system.svc.cluster.local
+  issuerRef:
+    kind: Issuer
+    name: shopify-operator-selfsigned-issuer
+  secretName: webhook-server-cert
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-selfsigned-issuer
+  namespace: shopify-operator-system
+spec:
+  selfSigned: {}
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-crd
+    control-plane: controller-manager
+  name: shopify-operator-controller-manager-metrics-monitor
+  namespace: shopify-operator-system
+spec:
+  endpoints:
+  - bearerTokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+    path: /metrics
+    port: https
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: shopify-crd
+      control-plane: controller-manager
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-allow-metrics-traffic
+  namespace: shopify-operator-system
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          metrics: enabled
+    ports:
+    - port: 8443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: shopify-operator
+      control-plane: controller-manager
+  policyTypes:
+  - Ingress
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  labels:
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/name: shopify-operator
+  name: shopify-operator-allow-webhook-traffic
+  namespace: shopify-operator-system
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          webhook: enabled
+    ports:
+    - port: 443
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: shopify-operator
+      control-plane: controller-manager
+  policyTypes:
+  - Ingress
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: shopify-operator-pod
+  name: shopify-operator-pod
+  namespace: shopify-operator-system
+spec:
+  containers:
+  - command:
+    - sleep
+    - infinity
+    image: alpine:3.21
+    imagePullPolicy: IfNotPresent
+    name: shopify-operator-pod
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+      runAsUser: 1000
+    volumeMounts:
+    - mountPath: /shopify
+      name: shopify-storage
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumes:
+  - name: shopify-storage
+    persistentVolumeClaim:
+      claimName: shopify-operator-pvc
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingWebhookConfiguration
+metadata:
+  annotations:
+    cert-manager.io/inject-ca-from: shopify-operator-system/shopify-operator-serving-cert
+  name: shopify-operator-validating-webhook-configuration
+webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: shopify-operator-webhook-service
+      namespace: shopify-operator-system
+      path: /validate-lukemcewen-com-v1-shopifyscraper
+  failurePolicy: Fail
+  name: vshopifyscraper-v1.kb.io
+  rules:
+  - apiGroups:
+    - lukemcewen.com
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - shopifyscrapers
+  sideEffects: None
