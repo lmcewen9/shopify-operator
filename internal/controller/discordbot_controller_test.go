@@ -27,7 +27,7 @@ import (
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 
-	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
+	lukemcewencomv1 "github.com/lmcewen9/shopify-operator/api/v1"
 )
 
 var _ = Describe("DiscordBot Controller", func() {

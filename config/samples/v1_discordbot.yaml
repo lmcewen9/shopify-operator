@@ -2,7 +2,7 @@ apiVersion: lukemcewen.com/v1
 kind: DiscordBot
 metadata:
   labels:
-    app.kubernetes.io/name: shopify-crd
+    app.kubernetes.io/name: shopify-operator
     app.kubernetes.io/managed-by: kustomize
   name: discordbot-sample
 spec:

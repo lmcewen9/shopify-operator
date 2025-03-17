@@ -39,7 +39,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
+	lukemcewencomv1 "github.com/lmcewen9/shopify-operator/api/v1"
 )
 
 // DiscordBotReconciler reconciles a DiscordBot object
@@ -113,7 +113,7 @@ func (r *DiscordBotReconciler) createScraper(name string) error {
 	scraper := &lukemcewencomv1.ShopifyScraper{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      name,
-			Namespace: "shopify-crd-system",
+			Namespace: "shopify-operator-system",
 		},
 		Spec: lukemcewencomv1.ShopifyScraperSpec{
 			Name:      name,

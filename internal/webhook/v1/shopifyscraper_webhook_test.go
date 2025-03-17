@@ -20,7 +20,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
+	lukemcewencomv1 "github.com/lmcewen9/shopify-operator/api/v1"
 )
 
 var _ = Describe("ShopifyScraper Webhook", func() {

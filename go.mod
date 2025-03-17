@@ -1,4 +1,4 @@
-module github.com/lmcewen9/shopify-crd
+module github.com/lmcewen9/shopify-operator
 
 go 1.23.0
 

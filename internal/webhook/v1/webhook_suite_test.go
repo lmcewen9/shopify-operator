@@ -40,7 +40,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	"sigs.k8s.io/controller-runtime/pkg/webhook"
 
-	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
+	lukemcewencomv1 "github.com/lmcewen9/shopify-operator/api/v1"
 	// +kubebuilder:scaffold:imports
 )
 

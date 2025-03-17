@@ -39,8 +39,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
-	lukemcewencomv1 "github.com/lmcewen9/shopify-crd/api/v1"
-	model "github.com/lmcewen9/shopify-crd/internal/scraper"
+	lukemcewencomv1 "github.com/lmcewen9/shopify-operator/api/v1"
+	model "github.com/lmcewen9/shopify-operator/internal/scraper"
 )
 
 var config *rest.Config

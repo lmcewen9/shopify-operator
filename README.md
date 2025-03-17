@@ -1,4 +1,4 @@
-# shopify-crd
+# shopify-operator
 This Custom Resource Definition is designed to scrape the Shopify endpoint \<url\>/products.json and report back to the cluster.
 
 ## Description
@@ -16,7 +16,7 @@ Scrapes Shopify API endpoints
 **Build and push your image to the location specified by `IMG`:**
 
 ```sh
-make docker-build docker-push IMG=<some-registry>/shopify-crd:tag
+make docker-build docker-push IMG=<some-registry>/shopify-operator:tag
 ```
 
 **NOTE:** This image ought to be published in the personal registry you specified.
@@ -89,7 +89,7 @@ Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
 the project, i.e.:
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/lmcewen9/shopify-crd/v0.0.1/dist/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/lmcewen9/shopify-operator/v0.0.1/dist/install.yaml
 ```
 
 ### By providing a Helm Chart

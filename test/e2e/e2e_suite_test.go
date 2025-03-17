@@ -25,7 +25,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/lmcewen9/shopify-crd/test/utils"
+	"github.com/lmcewen9/shopify-operator/test/utils"
 )
 
 var (
