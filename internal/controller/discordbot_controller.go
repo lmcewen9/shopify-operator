@@ -213,6 +213,8 @@ func startDiscordBot(token string, ctx context.Context) {
 }
 
 func sendMessage(s *discordgo.Session, message []string, roleID string) error {
+	fmt.Printf("pre message size: %d\n", utf8.RuneCountInString(strings.Join(message, "")))
+	fmt.Printf("post message size: %d\n", utf8.RuneCountInString(fmt.Sprintf("<@%s> %s", roleID, strings.Join(message, ""))))
 	if _, err := s.ChannelMessageSend(channelID, fmt.Sprintf("<@&%s> %s", roleID, strings.Join(message, ""))); err != nil {
 		return err
 	}
@@ -223,12 +225,12 @@ func eventHandler(s *discordgo.Session, data WebHookData) error {
 	message := data.Message
 	re := regexp.MustCompile(`https?:\/\/([^\/]+)`)
 	roleID := roleExists(s, guildID, re.FindStringSubmatch(message[0])[1])
-	if utf8.RuneCountInString(strings.Join(message, "")) > 2000 {
+	if utf8.RuneCountInString(strings.Join(message, "")) > 1978 {
 		var smallMessage []string
 		count := 0
 		for {
 			smallMessage = append(smallMessage, message[count])
-			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 2000 {
+			if utf8.RuneCountInString(strings.Join(smallMessage, "")) > 1978 {
 				smallMessage = smallMessage[:len(smallMessage)-1]
 				if err := sendMessage(s, smallMessage, roleID); err != nil {
 					return err
