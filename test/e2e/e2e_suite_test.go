@@ -52,7 +52,7 @@ var (
 // CertManager and Prometheus.
 func TestE2E(t *testing.T) {
 	RegisterFailHandler(Fail)
-	_, _ = fmt.Fprintf(GinkgoWriter, "Starting shopify-crd integration test suite\n")
+	_, _ = fmt.Fprintf(GinkgoWriter, "Starting shopify-operator integration test suite\n")
 	RunSpecs(t, "e2e suite")
 }
 
