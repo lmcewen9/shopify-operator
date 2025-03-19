@@ -1,7 +1,7 @@
-apiVersion: v2
+apiVersion: v1
 name: shopify-operator
 description: A Helm chart to distribute the project shopify-operator
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
-icon: "https://example.com/icon.png"
+version: 0.0.1
+appVersion: "0.0.1"
+icon: "https://charts.lukemcewen.com/shopifyscraperlogo.jgp"
