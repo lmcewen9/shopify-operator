@@ -89,7 +89,7 @@ Users can just run 'kubectl apply -f <URL for YAML BUNDLE>' to install
 the project, i.e.:
 
 ```sh
-kubectl apply -f https://raw.githubusercontent.com/lmcewen9/shopify-operator/v0.0.1/dist/install.yaml
+kubectl apply -f https://raw.githubusercontent.com/lmcewen9/shopify-operator/refs/heads/main/dist/install.yaml
 ```
 
 ### By providing a Helm Chart
