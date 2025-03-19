@@ -657,7 +657,7 @@ kind: ServiceMonitor
 metadata:
   labels:
     app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: shopify-crd
+    app.kubernetes.io/name: shopify-operator
     control-plane: controller-manager
   name: shopify-operator-controller-manager-metrics-monitor
   namespace: shopify-operator-system
