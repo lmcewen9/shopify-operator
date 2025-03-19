@@ -6,8 +6,8 @@ controllerManager:
   replicas: 1
   container:
     image:
-      repository: controller
-      tag: latest
+      repository: quwen/shopify-operator
+      tag: v0.0.1
     args:
       - "--leader-elect"
       - "--metrics-bind-address=:8443"
