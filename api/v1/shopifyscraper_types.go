@@ -30,7 +30,8 @@ type ShopifyScraperSpec struct {
 
 // ShopifyScraperStatus defines the observed state of ShopifyScraper.
 type ShopifyScraperStatus struct {
-	Active []corev1.ObjectReference `json:"active,omitempty"`
+	Active   []corev1.ObjectReference `json:"active,omitempty"`
+	NotFirst bool                     `json:"notFirst"`
 }
 
 // +kubebuilder:object:root=true

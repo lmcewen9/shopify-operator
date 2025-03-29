@@ -134,11 +134,14 @@ func (r *ShopifyScraperReconciler) Reconcile(ctx context.Context, req ctrl.Reque
 		logger.Info("successfully autoloaded data")
 	} */
 	// END OF AUTOLOAD DATABASE
-
 	pullCommand := fmt.Sprintf("cat /shopify/%s", req.Name)
 	encodedOldData, err := execInPod(clientset, config, "shopify-operator-system", "shopify-operator-pod", "shopify-operator-pod", pullCommand)
 	if err != nil {
-		logger.Error(err, "could not pull data")
+		if scraper.Status.NotFirst {
+			logger.Error(err, "could not pull data")
+		} else {
+			scraper.Status.NotFirst = true
+		}
 	}
 
 	decodedData, decodedOldData, err := compareBase64Decode(encodedData, string(encodedOldData))
