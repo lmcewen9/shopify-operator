@@ -661,7 +661,7 @@ kind: ServiceMonitor
 metadata:
   labels:
     app.kubernetes.io/managed-by: kustomize
-    app.kubernetes.io/name: shopify-crd
+    app.kubernetes.io/name: shopify-operator
     control-plane: controller-manager
   name: shopify-operator-controller-manager-metrics-monitor
   namespace: shopify-operator-system
@@ -675,7 +675,7 @@ spec:
       insecureSkipVerify: true
   selector:
     matchLabels:
-      app.kubernetes.io/name: shopify-crd
+      app.kubernetes.io/name: shopify-operator
       control-plane: controller-manager
 ---
 apiVersion: networking.k8s.io/v1
