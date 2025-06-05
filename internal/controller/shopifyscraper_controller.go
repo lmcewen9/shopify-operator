@@ -184,15 +184,15 @@ func (r *ShopifyScraperReconciler) SetupWithManager(mgr ctrl.Manager) error {
 }
 
 func compareBase64Decode(new, old string) ([]string, map[string]struct{}, error) {
+	if new == old {
+		return nil, nil, nil
+	}
+
 	decoded1, err1 := base64.StdEncoding.DecodeString(new)
 	decoded2, err2 := base64.StdEncoding.DecodeString(old)
 
 	if err1 != nil || err2 != nil {
 		return nil, nil, fmt.Errorf("error decoding base64: %v, %v", err1, err2)
-	}
-
-	if string(decoded1) == string(decoded2) {
-		return nil, nil, nil
 	}
 	return formatStrArr(convertByteToStringArray(decoded1)), createSet(formatStrArr(convertByteToStringArray(decoded2))), nil
 }
