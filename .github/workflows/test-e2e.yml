@@ -37,7 +37,8 @@ jobs:
             echo "IMG=quwen/shopify-operator:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
           else
             echo "IMG=quwen/shopify-operator:${{ github.sha }}" >> $GITHUB_ENV
-      
+          fi
+          
       - name: Running Test e2e
         run: |
           go mod tidy
