@@ -29,4 +29,4 @@ jobs:
 
       - name: Build and push Docker image (release)
         if: github.event_name == 'release'
-        run: make docker-buildx IMG=quwen/shopify-operator:${{ github.event.release.tag_name }}
+        run: make docker-buildx IMG=${{ secrets.DOCKER_USERNAME }}/shopify-operator:${{ github.event.release.tag_name }}
