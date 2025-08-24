@@ -3,6 +3,9 @@ name: E2E Tests
 on:
   push:
 
+  release:
+    types: [published]
+
 jobs:
   test-e2e:
     name: Run on Ubuntu
@@ -27,7 +30,14 @@ jobs:
 
       - name: Create kind cluster
         run: kind create cluster
-
+      
+      - name: Set IMG variable
+        run: |
+          if [[ ${{ github.event_name }} == 'release' ]]; then
+            echo "IMG=quwen/shopify-operator:${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          else
+            echo "IMG=quwen/shopify-operator:${{ github.sha }}" >> $GITHUB_ENV
+      
       - name: Running Test e2e
         run: |
           go mod tidy
