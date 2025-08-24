@@ -38,8 +38,10 @@ jobs:
           else
             echo "IMG=quwen/shopify-operator:${{ github.sha }}" >> $GITHUB_ENV
           fi
-          
+
       - name: Running Test e2e
+        env:
+          IMG: ${{ env.IMG }}
         run: |
           go mod tidy
           make test-e2e

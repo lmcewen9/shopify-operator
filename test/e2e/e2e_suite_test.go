@@ -43,7 +43,7 @@ var (
 
 	// projectImage is the name of the image which will be build and loaded
 	// with the code source changes to be tested.
-	projectImage = os.Getenv("env.IMG")
+	projectImage = os.Getenv("IMG")
 )
 
 // TestE2E runs the end-to-end (e2e) test suite for the project. These tests execute in an isolated,
