@@ -44,4 +44,4 @@ jobs:
           IMG: ${{ env.IMG }}
         run: |
           go mod tidy
-          make test-e2e IMG=${{ env.IMG }}
+          make test-e2e
