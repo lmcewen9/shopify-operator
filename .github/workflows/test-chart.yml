@@ -105,7 +105,7 @@ jobs:
       - name: Package chart
         run: |
           mkdir -p packaged
-          helm package ./dist/charts/ --destination ./packaged
+          helm package ./dist/chart/ --destination ./packaged
       
       - name: Generate Helm repo index
         run: |
