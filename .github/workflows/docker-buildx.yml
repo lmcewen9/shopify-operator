@@ -1,7 +1,8 @@
 name: Docker Buildx
 
 on:
-  push: [main]
+  push:
+    branches: ["main"]
 
   release:
     types: [published]
