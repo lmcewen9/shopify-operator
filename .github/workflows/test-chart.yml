@@ -121,6 +121,13 @@ jobs:
         run: |
           cp -r ./packaged/$CHART_VERSION/* ./packaged/
       
+      - name: Merge root index.yaml
+        run: |
+          if [ -f ./packaged/index.yaml ]; then
+            helm repo index ./packaged --url https://charts.lukemcewen.com --merge ./packaged/index.yaml
+          else
+            helm repo index ./packaged --url https://charts.lukemcewen.com
+      
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
