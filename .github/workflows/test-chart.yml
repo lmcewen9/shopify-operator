@@ -102,18 +102,31 @@ jobs:
       - name: Verify Helm installation
         run: helm version
       
+      - name: Get chart version
+        id: chart
+        run: |
+          CHART_VERSION=$(grep '^version:' ./dist/charts/Chart.yaml | awk '{print $2}')
+          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
+
       - name: Package chart
         run: |
-          mkdir -p packaged
-          helm package ./dist/chart/ --destination ./packaged
+          mkdir -p packaged/$CHART_VERSION
+          helm package ./dist/chart/ --destination ./packaged/$CHART_VERSION
       
       - name: Generate Helm repo index
         run: |
-          helm repo index ./packaged --url https://charts.lukemcewen.com
+          helm repo index ./packaged/$CHART_VERSION --url https://charts.lukemcewen.com/$CHART_VERSION
+      
+      - name: Update root index.yaml
+        run: |
+          mkdir -p ./packaged/root
+          cp ./packaged/$CHART_VERSION/* ./packaged/root/
+          helm repo index ./packaged/root --url https://charts.example.com
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GH_TOKEN }}
-          published_dir: ./packaged
+          publish_dir: ./packaged
           cname: charts.lukemcewen.com
+          commit_message: "Publish Helm chart ${{ env.CHART_VERSION }}"
