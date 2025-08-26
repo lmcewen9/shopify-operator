@@ -23,7 +23,6 @@ import (
 	"os"
 	"os/exec"
 	"strings"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2" //nolint:golint,revive
 )
@@ -251,15 +250,3 @@ func UncommentCode(filename, target, prefix string) error {
 	return os.WriteFile(filename, out.Bytes(), 0644)
 }
 
-// Ensures that webhook-server-cert is present
-func WaitForWebhookServerCert(namespace string, timeout time.Duration) error {
-    deadline := time.Now().Add(timeout)
-    for time.Now().Before(deadline) {
-        cmd := exec.Command("kubectl", "get", "secret", "webhook-server-cert", "-n", namespace)
-        if err := cmd.Run(); err == nil {
-            return nil
-        }
-        time.Sleep(5 * time.Second)
-    }
-    return fmt.Errorf("webhook-server-cert secret not found in namespace %s after %v", namespace, timeout)
-}

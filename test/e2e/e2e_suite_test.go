@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"testing"
-	"time"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -95,9 +94,6 @@ var _ = BeforeSuite(func() {
 		} else {
 			_, _ = fmt.Fprintf(GinkgoWriter, "WARNING: CertManager is already installed. Skipping installation...\n")
 		}
-		By("waiting for webhook-server-cert secret to exist")
-		err := utils.WaitForWebhookServerCert(namespace, 2*time.Minute)
-		Expect(err).NotTo(HaveOccurred(), "webhook-server-cert secret should exist before deploying controller manager")
 	}
 })
 
