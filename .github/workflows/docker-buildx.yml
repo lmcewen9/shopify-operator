@@ -34,11 +34,3 @@ jobs:
 
       - name: Build and push Docker image
         run: make docker-buildx IMG=quwen/shopify-operator:${{ steps.meta.outputs.tag }}
-
-      - name: Save image tag artifact
-        run: echo "${{ steps.meta.outputs.tag }}" > image-tag.txt
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: image-tag
-          path: image-tag.txt

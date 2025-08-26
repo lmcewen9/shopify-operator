@@ -1,10 +1,8 @@
 name: E2E Tests
 
 on:
-  workflow_run:
-    workflows: ["Docker Buildx"]
-    types:
-      - completed
+  push:
+    branches: ["main"]
 
 jobs:
   test-e2e:
@@ -30,21 +28,8 @@ jobs:
 
       - name: Create kind cluster
         run: kind create cluster
-      
-      - name: Download artifact from build workflow
-        uses: dawidd6/action-download-artifact@v3
-        with:
-          workflow: docker-buildx.yml
-          run_id: ${{ github.event.workflow_run.id }}
-          name: image-tag
-      
-      - name: Read tag
-        id: read
-        run: echo "tag=$(cat image-tag.txt)" >> $GITHUB_OUTPUT
 
       - name: Running Test e2e
-        env:
-          IMG: ${{ secrets.DOCKER_USERNAME }}/shopify-operator:${{ steps.read.outputs.tag }}
         run: |
           go mod tidy
           make test-e2e
