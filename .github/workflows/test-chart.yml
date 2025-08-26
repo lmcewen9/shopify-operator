@@ -127,6 +127,7 @@ jobs:
             helm repo index ./packaged --url https://charts.lukemcewen.com --merge ./packaged/index.yaml
           else
             helm repo index ./packaged --url https://charts.lukemcewen.com
+          fi
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
