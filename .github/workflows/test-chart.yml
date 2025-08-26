@@ -119,9 +119,7 @@ jobs:
       
       - name: Update root index.yaml
         run: |
-          mkdir -p ./packaged/root
-          cp -r ./packaged/$CHART_VERSION/* ./packaged/root/
-          helm repo index ./packaged/root --url https://charts.example.com
+          cp -r ./packaged/$CHART_VERSION/* ./packaged/
       
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
