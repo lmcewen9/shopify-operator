@@ -1,4 +1,4 @@
-name: Test and Publish Chart
+name: Test Chart
 
 on:
   push:
@@ -85,54 +85,3 @@ jobs:
 #      - name: Check Presence of ServiceMonitor
 #        run: |
 #          kubectl wait --namespace shopify-operator-system --for=jsonpath='{.kind}'=ServiceMonitor servicemonitor/shopify-operator-controller-manager-metrics-monitor
-
-  publish-chart:
-    runs-on: ubuntu-latest
-    needs: [test-chart]
-    steps:
-      - name: Checkout charts repo
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      
-      - name: Install Helm
-        run: |
-          curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
-
-      - name: Verify Helm installation
-        run: helm version
-      
-      - name: Get chart version
-        id: chart
-        run: |
-          CHART_VERSION=$(grep '^version:' ./dist/chart/Chart.yaml | awk '{print $2}')
-          echo "CHART_VERSION=$CHART_VERSION" >> $GITHUB_ENV
-
-      - name: Package chart
-        run: |
-          mkdir -p packaged/$CHART_VERSION
-          helm package ./dist/chart/ --destination ./packaged/$CHART_VERSION
-      
-      - name: Generate Helm repo index
-        run: |
-          helm repo index ./packaged/$CHART_VERSION --url https://charts.lukemcewen.com/$CHART_VERSION
-      
-      - name: Update root index.yaml
-        run: |
-          cp -r ./packaged/$CHART_VERSION/* ./packaged/
-      
-      - name: Merge root index.yaml
-        run: |
-          if [ -f ./packaged/index.yaml ]; then
-            helm repo index ./packaged --url https://charts.lukemcewen.com --merge ./packaged/index.yaml
-          else
-            helm repo index ./packaged --url https://charts.lukemcewen.com
-          fi
-      
-      - name: Deploy to GitHub Pages
-        uses: peaceiris/actions-gh-pages@v4
-        with:
-          github_token: ${{ secrets.GH_TOKEN }}
-          publish_dir: ./packaged
-          cname: charts.lukemcewen.com
-          commit_message: "Publish Helm chart ${{ env.CHART_VERSION }}"
