@@ -110,17 +110,17 @@ jobs:
 
       - name: Package chart
         run: |
-          mkdir -p packaged/$CHART_VERSION
-          helm package ./dist/chart/ --destination ./packaged/$CHART_VERSION
+          mkdir -p packaged/${{ env.CHART_VERSION }}
+          helm package ./dist/chart/ --destination ./packaged/${{ env.CHART_VERSION }}
       
       - name: Generate Helm repo index
         run: |
-          helm repo index ./packaged/$CHART_VERSION --url https://charts.lukemcewen.com/$CHART_VERSION
+          helm repo index ./packaged/${{ env.CHART_VERSION }} --url https://charts.lukemcewen.com/$CHART_VERSION
       
       - name: Update root index.yaml
         run: |
           mkdir -p ./packaged/root
-          cp -r ./packaged/$CHART_VERSION/* ./packaged/root/
+          cp -r ./packaged/${{ env.CHART_VERSION }}/* ./packaged/root/
           helm repo index ./packaged/root --url https://charts.example.com
       
       - name: Deploy to GitHub Pages
