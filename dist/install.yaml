@@ -565,7 +565,7 @@ spec:
         - --webhook-cert-path=/tmp/k8s-webhook-server/serving-certs
         command:
         - /manager
-        image: quwen/shopify-operator:v0.0.1
+        image: quwen/shopify-operator:v0.0.2
         imagePullPolicy: Always
         livenessProbe:
           httpGet:
