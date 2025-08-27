@@ -16,6 +16,7 @@ jobs:
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: true
 
       - name: Install the latest version of kind
         run: |
@@ -28,9 +29,6 @@ jobs:
 
       - name: Create kind cluster
         run: kind create cluster
-      
-      - name: Remove go/pkg/mod directory before cache restore
-        run: rm -rf $(go env GOMODCACHE)
 
       - name: Running Test e2e
         run: |
