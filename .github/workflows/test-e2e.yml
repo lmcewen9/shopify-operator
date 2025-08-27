@@ -28,6 +28,9 @@ jobs:
 
       - name: Create kind cluster
         run: kind create cluster
+      
+      - name: Remove go/pkg/mod directory before cache restore
+        run: rm -rf $HOME/go/pkg/mod
 
       - name: Running Test e2e
         run: |
