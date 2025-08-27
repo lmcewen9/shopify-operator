@@ -3,12 +3,12 @@ entries:
   shopify-operator:
   - apiVersion: v2
     appVersion: 0.0.1
-    created: "2025-08-27T03:33:19.859747469Z"
+    created: "2025-08-27T23:47:21.733959343Z"
     description: A Helm chart to distribute the project shopify-operator
-    digest: ca8e33f16e96bc543034a11a278c27294817f968be1038c59f781318ca3e29b5
+    digest: 41ae79751ff8333a252a01a3c5bf0722b0f56b23d0868c8cd7f94c81b39ecd65
     name: shopify-operator
     type: application
     urls:
     - https://charts.lukemcewen.com/0.0.1/shopify-operator-0.0.1.tgz
     version: 0.0.1
-generated: "2025-08-27T03:33:19.859101503Z"
+generated: "2025-08-27T23:47:21.732927275Z"
