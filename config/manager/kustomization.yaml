@@ -3,6 +3,6 @@ resources:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 images:
-- name: quwen/shopify-operator:v0.0.2
+- name: quwen/shopify-operator:v0.0.1
   newName: controller
   newTag: latest

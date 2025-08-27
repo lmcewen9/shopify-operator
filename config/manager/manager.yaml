@@ -65,7 +65,7 @@ spec:
         args:
           - --leader-elect
           - --health-probe-bind-address=:8081
-        image: quwen/shopify-operator:v0.0.2
+        image: quwen/shopify-operator:v0.0.1
         name: manager
         imagePullPolicy: IfNotPresent
         ports: []
