@@ -287,7 +287,7 @@ func sendWebhook(d []string) error {
 
 	req.Header.Set("Context-Type", "application/json")
 
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := &http.Client{Timeout: 30 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
