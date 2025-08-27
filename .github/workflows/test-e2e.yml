@@ -30,7 +30,7 @@ jobs:
         run: kind create cluster
       
       - name: Remove go/pkg/mod directory before cache restore
-        run: rm -rf $HOME/go/pkg/mod
+        run: rm -rf $(go env GOMODCACHE)
 
       - name: Running Test e2e
         run: |
