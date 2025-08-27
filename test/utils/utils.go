@@ -249,4 +249,3 @@ func UncommentCode(filename, target, prefix string) error {
 	// nolint:gosec
 	return os.WriteFile(filename, out.Bytes(), 0644)
 }
-
