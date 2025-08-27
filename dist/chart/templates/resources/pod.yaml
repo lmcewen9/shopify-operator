@@ -1,0 +1,33 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    app: shopify-operator-pod
+  name: shopify-operator-pod
+  namespace: shopify-operator-system
+spec:
+  containers:
+  - command:
+    - sleep
+    - infinity
+    image: alpine:3.21
+    imagePullPolicy: IfNotPresent
+    name: shopify-operator-pod
+    securityContext:
+      allowPrivilegeEscalation: false
+      capabilities:
+        drop:
+        - ALL
+      runAsNonRoot: true
+      runAsUser: 1000
+    volumeMounts:
+    - mountPath: /shopify
+      name: shopify-storage
+  securityContext:
+    runAsNonRoot: true
+    seccompProfile:
+      type: RuntimeDefault
+  volumes:
+  - name: shopify-storage
+    persistentVolumeClaim:
+      claimName: shopify-operator-pvc
