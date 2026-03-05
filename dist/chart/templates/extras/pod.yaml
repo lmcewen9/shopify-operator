@@ -3,8 +3,8 @@ kind: Pod
 metadata:
   labels:
     app: shopify-operator-pod
-  name: shopify-operator-pod
-  namespace: shopify-operator-system
+  name: {{ include "shopify-operator.resourceName" (dict "suffix" "pod" "context" $) }}
+  namespace: {{ .Release.Namespace }}
 spec:
   containers:
   - command:
@@ -30,4 +30,4 @@ spec:
   volumes:
   - name: shopify-storage
     persistentVolumeClaim:
-      claimName: shopify-operator-pvc
+      claimName: {{ include "shopify-operator.resourceName" (dict "suffix" "pvc" "context" $) }}

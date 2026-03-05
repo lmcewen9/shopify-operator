@@ -6,7 +6,9 @@ domain: lukemcewen.com
 layout:
 - go.kubebuilder.io/v4
 plugins:
-  helm.kubebuilder.io/v1-alpha: {}
+  helm.kubebuilder.io/v2-alpha:
+    manifests: dist/install.yaml
+    output: dist
 projectName: shopify-operator
 repo: github.com/lmcewen9/shopify-operator
 resources:
