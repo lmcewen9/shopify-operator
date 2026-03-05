@@ -1,7 +1,14 @@
 apiVersion: v2
 name: shopify-operator
-description: A Helm chart to distribute the project shopify-operator
+description: A Helm chart to distribute shopify-operator
 type: application
-version: 0.0.1
-appVersion: "0.0.1"
-# icon: "https://charts.lukemcewen.com/shopifyscraperlogo.jgp"
+
+version: 0.1.0
+appVersion: "0.1.0"
+
+keywords:
+  - kubernetes
+  - operator
+
+annotations:
+  kubebuilder.io/generated-by: kubebuilder

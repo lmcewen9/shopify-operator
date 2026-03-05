@@ -544,7 +544,7 @@ metadata:
   name: shopify-operator-controller-manager
   namespace: shopify-operator-system
 spec:
-  replicas: 1
+  replicas: 2
   selector:
     matchLabels:
       app.kubernetes.io/name: shopify-operator
@@ -565,8 +565,8 @@ spec:
         - --webhook-cert-path=/tmp/k8s-webhook-server/serving-certs
         command:
         - /manager
-        image: quwen/shopify-operator:v0.0.1
-        imagePullPolicy: Always
+        image: controller:latest
+        imagePullPolicy: IfNotPresent
         livenessProbe:
           httpGet:
             path: /healthz
