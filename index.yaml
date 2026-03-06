@@ -4,16 +4,16 @@ entries:
   - annotations:
       kubebuilder.io/generated-by: kubebuilder
     apiVersion: v2
-    appVersion: 0.1.0
-    created: "2026-03-05T23:21:47.140913155Z"
+    appVersion: 0.0.2
+    created: "2026-03-06T19:50:36.874014328Z"
     description: A Helm chart to distribute shopify-operator
-    digest: e6e04e02ba4dfa5c677e75ee1c26b442a12710bc7934e63d5b010bb4273d8f7e
+    digest: ee1f5d7ed93ae053b870bf33257f77cae6dc44f11dea90d9b4c4887a4ace4d19
     keywords:
     - kubernetes
     - operator
     name: shopify-operator
     type: application
     urls:
-    - https://charts.lukemcewen.com/0.1.0/shopify-operator-0.1.0.tgz
-    version: 0.1.0
-generated: "2026-03-05T23:21:47.140291002Z"
+    - https://charts.lukemcewen.com/0.0.2/shopify-operator-0.0.2.tgz
+    version: 0.0.2
+generated: "2026-03-06T19:50:36.873185382Z"
