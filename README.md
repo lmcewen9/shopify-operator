@@ -13,6 +13,12 @@ Scrapes Shopify API endpoints
 - Access to a Kubernetes v1.11.3+ cluster.
 
 ### To Deploy on the cluster
+**Deploy with Helm:**
+```sh
+helm repo add shopify-operator https://charts.lukemcewen.com
+helm repo update
+helm install shopify-operator --create-namespace --namespace shopify-operator-system
+```
 **Build and push your image to the location specified by `IMG`:**
 
 ```sh

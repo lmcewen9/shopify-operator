@@ -3,8 +3,8 @@ name: shopify-operator
 description: A Helm chart to distribute shopify-operator
 type: application
 
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.0.2
+appVersion: "0.0.2"
 
 keywords:
   - kubernetes
